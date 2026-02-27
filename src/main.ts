@@ -1,5 +1,14 @@
 import { createApp } from 'vue'
-import './style.css'
+import './style.css' // Imports Tailwind CSS
 import App from './App.vue'
 
-createApp(App).mount('#app')
+// Import Element Plus and its CSS
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+
+const app = createApp(App)
+
+// Use Element Plus in your Vue app
+app.use(ElementPlus)
+
+app.mount('#app')
