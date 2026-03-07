@@ -33,9 +33,8 @@ const newBankForm = ref({
 async function fetchQuestionBanks(): Promise<void> {
   isLoading.value = true;
   try {
-    // Note: Backend may need a GET /question_banks endpoint
-    // For now, we'll handle the case where it doesn't exist
-    questionBanks.value = [];
+    const data = await questionBankApi.getAll(props.token);
+    questionBanks.value = data;
   } catch (error: unknown) {
     ElMessage.error(error instanceof Error ? error.message : 'Failed to fetch question banks');
   } finally {
@@ -75,7 +74,7 @@ async function createQuestionBank(): Promise<void> {
     questionBanks.value.push(newBank);
     selectedBank.value = newBank;
     await fetchQuestions(newBank.bank_id);
-    
+
     ElMessage.success('Question bank created successfully!');
     showCreateDialog.value = false;
     newBankForm.value = { name: '', is_public: false, description: '' };
@@ -94,8 +93,8 @@ async function deleteQuestionBank(bank: QuestionBankResponse): Promise<void> {
       'Delete Question Bank',
       { confirmButtonText: 'Delete', cancelButtonText: 'Cancel', type: 'warning' }
     );
-    
-    // Note: Backend may need a DELETE endpoint
+
+    await questionBankApi.delete(props.token, bank.bank_id);
     questionBanks.value = questionBanks.value.filter(b => b.bank_id !== bank.bank_id);
     if (selectedBank.value?.bank_id === bank.bank_id) {
       selectedBank.value = null;

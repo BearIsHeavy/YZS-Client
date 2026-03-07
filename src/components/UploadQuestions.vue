@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import type { QuestionBankResponse } from '../types';
-import { uploadApi } from '../utils/api';
+import { uploadApi, questionBankApi } from '../utils/api';
 import { ElMessage } from 'element-plus';
 
 const props = defineProps<{
@@ -37,9 +37,8 @@ const singleQuestionForm = ref({
 async function fetchQuestionBanks(): Promise<void> {
   isLoadingBanks.value = true;
   try {
-    // Note: This requires GET /question_banks endpoint on backend
-    // For now, using empty array - will be populated when backend supports it
-    questionBanks.value = [];
+    const data = await questionBankApi.getAll(props.token);
+    questionBanks.value = data;
   } catch (error: unknown) {
     ElMessage.error(error instanceof Error ? error.message : 'Failed to fetch question banks');
   } finally {
@@ -93,8 +92,10 @@ async function uploadFile(): Promise<void> {
     } else {
       result = await uploadApi.uploadXml(props.token, selectedBankId.value, selectedFile.value);
     }
-    
-    ElMessage.success(`Upload successful! ${result.questions_imported || result.count || 0} questions imported.`);
+
+    // Parse response - backend returns { detail: string, questions_added: number }
+    const questionsCount = result.questions_added || 0;
+    ElMessage.success(`Upload successful! ${questionsCount} questions imported.`);
     selectedFile.value = null;
     // Reset file input
     const fileInput = document.getElementById('file-upload') as HTMLInputElement;
