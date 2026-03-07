@@ -160,48 +160,45 @@ export interface HTTPValidationError {
 }
 
 // ==========================================
-// MISTAKE NOTEBOOK TYPES (Frontend only - for future backend integration)
+// MISTAKE NOTEBOOK TYPES (matching backend API)
 // ==========================================
 
 export type QuestionStatusEnum = 'new' | 'reviewing' | 'mastered' | 'removed';
-export type QuestionTypeEnumStr = 'choice' | 'fill' | 'solution' | 'other';
+export type QuestionTypeEnumStr = 'essay' | 'single_choice' | 'multiple_choice' | 'fill_blank';
 export type ErrorReasonEnum = 'careless' | 'concept_gap' | 'logic_error' | 'time_limit' | 'other';
 export type ReviewResultEnum = 'correct' | 'wrong' | 'hint_used';
 
-export interface WrongQuestionCreate {
-  subject_id: number;
-  question_text: string;
-  question_images?: string[] | null;
-  options_json?: string[] | Record<string, unknown> | null;
-  correct_answer?: string | null;
-  user_answer?: string | null;
-  question_type?: QuestionTypeEnumStr;
-  source_info?: string | null;
-  error_reason_type?: ErrorReasonEnum | null;
-  error_reason_detail?: string | null;
-  difficulty_level?: number;
-  knowledge_point_ids?: number[];
+/**
+ * Wrong question response from the Mistake Notebook API.
+ * Wrong questions are derived from user_question_logs where is_correct = false.
+ */
+export interface WrongQuestionResponse {
+  log_id: number;  // ID from user_question_logs table
+  question_no: number;  // ID from qb_questions table
+  user_id: number;
+  category: string;  // Subject/topic category from qb_questions
+  stem: string;  // Question stem from qb_questions
+  question_type: QuestionTypeEnumStr;
+  source_info: string | null;  // Question bank name
+  difficulty_level: number;
+  user_answer: string | null;
+  correct_ans_summary: string | null;
+  options: Record<string, unknown> | null;
+  error_reason_type: ErrorReasonEnum | null;
+  error_reason_detail: string | null;
+  status: QuestionStatusEnum;
+  mistake_count: number;
+  is_mastered: boolean;
+  attempt_time: string;  // ISO datetime
+  created_at: string;  // ISO datetime
 }
 
-export interface WrongQuestionResponse {
-  id: number;
-  subject_id: number;
-  question_text: string;
-  question_images?: string[] | null;
-  options_json?: string[] | Record<string, unknown> | null;
-  correct_answer?: string | null;
-  user_answer?: string | null;
-  question_type: QuestionTypeEnumStr;
-  source_info?: string | null;
+export interface WrongQuestionUpdate {
+  is_mastered?: boolean;
   error_reason_type?: ErrorReasonEnum | null;
   error_reason_detail?: string | null;
-  status: QuestionStatusEnum;
-  difficulty_level: number;
-  mistake_count: number;
-  last_reviewed_at?: string | null;
-  next_review_date?: string | null;
-  created_at: string;
-  updated_at: string;
+  status?: QuestionStatusEnum;
+  difficulty_level?: number;
 }
 
 export interface PaginatedWrongQuestionResponse {
@@ -209,6 +206,14 @@ export interface PaginatedWrongQuestionResponse {
   total: number;
   page: number;
   size: number;
+}
+
+export interface MistakeNotebookStats {
+  total_wrong: number;
+  new_count: number;
+  reviewing_count: number;
+  mastered_count: number;
+  by_category: Record<string, number>;
 }
 
 export interface ReviewRecordCreate {

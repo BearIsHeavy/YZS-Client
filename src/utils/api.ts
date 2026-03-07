@@ -306,3 +306,170 @@ export const uploadApi = {
     return response.json();
   }
 };
+
+// ==========================================
+// MISTAKE NOTEBOOK API ENDPOINTS
+// ==========================================
+
+export const mistakeNotebookApi = {
+  /**
+   * Get paginated list of wrong questions for current user
+   * GET /mistake-notebook/questions
+   * 
+   * Wrong questions are derived from user_question_logs where is_correct = false
+   * 
+   * @param token - JWT access token
+   * @param params - Query parameters for filtering and pagination
+   * @returns Promise with paginated wrong questions
+   */
+  getWrongQuestions: async (
+    token: string,
+    params: {
+      page?: number;
+      size?: number;
+      category?: string | null;
+      status?: 'new' | 'reviewing' | 'mastered' | 'removed' | null;
+      needs_review?: boolean | null;
+    } = {}
+  ) => {
+    const queryParams = new URLSearchParams();
+    
+    if (params.page !== undefined && params.page !== null) {
+      queryParams.append('page', params.page.toString());
+    }
+    if (params.size !== undefined && params.size !== null) {
+      queryParams.append('size', params.size.toString());
+    }
+    if (params.category !== undefined && params.category !== null) {
+      queryParams.append('category', params.category);
+    }
+    if (params.status !== undefined && params.status !== null) {
+      queryParams.append('status', params.status);
+    }
+    if (params.needs_review !== undefined && params.needs_review !== null) {
+      queryParams.append('needs_review', params.needs_review.toString());
+    }
+
+    const response = await fetch(`${API_BASE_URL}/mistake-notebook/questions?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get mistake notebook statistics
+   * GET /mistake-notebook/stats
+   * 
+   * @param token - JWT access token
+   * @returns Promise with statistics
+   */
+  getStats: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/mistake-notebook/stats`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Update wrong question status/metadata
+   * PUT /mistake-notebook/questions/{log_id}/status
+   * 
+   * @param token - JWT access token
+   * @param logId - ID of the user_question_logs record
+   * @param updateData - Update data (is_mastered, error_reason_type, etc.)
+   * @returns Promise with updated wrong question
+   */
+  updateWrongQuestionStatus: async (
+    token: string,
+    logId: number,
+    updateData: {
+      is_mastered?: boolean;
+      error_reason_type?: 'careless' | 'concept_gap' | 'logic_error' | 'time_limit' | 'other' | null;
+      error_reason_detail?: string | null;
+      status?: 'new' | 'reviewing' | 'mastered' | 'removed';
+      difficulty_level?: number;
+    }
+  ) => {
+    const response = await fetch(`${API_BASE_URL}/mistake-notebook/questions/${logId}/status`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(updateData)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Mark wrong question as mastered
+   * POST /mistake-notebook/questions/{log_id}/master
+   * 
+   * @param token - JWT access token
+   * @param logId - ID of the user_question_logs record
+   * @returns Promise that resolves on success
+   */
+  markAsMastered: async (token: string, logId: number) => {
+    const response = await fetch(`${API_BASE_URL}/mistake-notebook/questions/${logId}/master`, {
+      method: 'POST',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return null;
+  },
+
+  /**
+   * Mark wrong question as not mastered (needs review)
+   * POST /mistake-notebook/questions/{log_id}/unmaster
+   * 
+   * @param token - JWT access token
+   * @param logId - ID of the user_question_logs record
+   * @returns Promise that resolves on success
+   */
+  markAsUnmastered: async (token: string, logId: number) => {
+    const response = await fetch(`${API_BASE_URL}/mistake-notebook/questions/${logId}/unmaster`, {
+      method: 'POST',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return null;
+  },
+
+  /**
+   * Remove wrong question from notebook
+   * DELETE /mistake-notebook/questions/{log_id}
+   * 
+   * Deletes the user_question_logs record (not the actual question)
+   * 
+   * @param token - JWT access token
+   * @param logId - ID of the user_question_logs record
+   * @returns Promise that resolves on success
+   */
+  removeWrongQuestion: async (token: string, logId: number) => {
+    const response = await fetch(`${API_BASE_URL}/mistake-notebook/questions/${logId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return null;
+  },
+
+  /**
+   * Batch update wrong questions
+   * POST /mistake-notebook/questions/batch-update
+   * 
+   * @param token - JWT access token
+   * @param logIds - Array of user_question_logs IDs to update
+   * @param isMastered - New mastered status for all questions
+   * @returns Promise that resolves on success
+   */
+  batchUpdate: async (token: string, logIds: number[], isMastered: boolean) => {
+    const response = await fetch(`${API_BASE_URL}/mistake-notebook/questions/batch-update`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ question_log_ids: logIds, is_mastered: isMastered })
+    });
+    if (!response.ok) await handleApiError(response);
+    return null;
+  }
+};

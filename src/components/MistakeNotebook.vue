@@ -1,12 +1,12 @@
 <!-- src/components/MistakeNotebook.vue -->
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import type {
   WrongQuestionResponse,
-  WrongQuestionCreate,
   QuestionStatusEnum,
-  ErrorReasonEnum
+  MistakeNotebookStats
 } from '../types';
+import { mistakeNotebookApi } from '../utils/api';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 const props = defineProps<{
@@ -23,14 +23,13 @@ const isLoading = ref<boolean>(false);
 const filters = reactive({
   page: 1,
   size: 20,
-  subject_id: null as number | null,
+  category: null as string | null,
   status: null as QuestionStatusEnum | null,
   needs_review: false
 });
 
-// Mock Data - Since the YanZhuShou backend doesn't have a mistake notebook API yet
-// This demonstrates the UI functionality with sample data
-const mockSubjects = [
+// Category options - derived from qb_questions.category field
+const categoryOptions = [
   { id: 1, name: 'Mathematics' },
   { id: 2, name: 'English' },
   { id: 3, name: 'Physics' },
@@ -44,205 +43,105 @@ const statuses: { label: string; value: QuestionStatusEnum }[] = [
   { label: 'Removed', value: 'removed' }
 ];
 
-const errorReasons: { label: string; value: ErrorReasonEnum }[] = [
-  { label: 'Careless Mistake', value: 'careless' },
-  { label: 'Concept Gap', value: 'concept_gap' },
-  { label: 'Logic Error', value: 'logic_error' },
-  { label: 'Time Limit', value: 'time_limit' },
-  { label: 'Other', value: 'other' }
-];
-
-// Generate mock data for demonstration
-function generateMockData(): WrongQuestionResponse[] {
-  const mockQuestions: WrongQuestionResponse[] = [
-    {
-      id: 1,
-      subject_id: 1,
-      question_text: 'What is the derivative of x² + 3x?',
-      question_type: 'choice',
-      options_json: ['2x', '2x + 3', 'x + 3', '2x² + 3'],
-      correct_answer: '2x + 3',
-      user_answer: '2x',
-      source_info: 'Calculus Midterm 2025',
-      error_reason_type: 'concept_gap',
-      error_reason_detail: 'Forgot to apply the power rule to the linear term',
-      status: 'new',
-      difficulty_level: 3,
-      mistake_count: 1,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: 2,
-      subject_id: 2,
-      question_text: 'Choose the correct past participle of "go"',
-      question_type: 'choice',
-      options_json: ['goed', 'gone', 'went', 'going'],
-      correct_answer: 'gone',
-      user_answer: 'went',
-      source_info: 'English Grammar Test',
-      error_reason_type: 'careless',
-      error_reason_detail: 'Confused past tense with past participle',
-      status: 'reviewing',
-      difficulty_level: 2,
-      mistake_count: 2,
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: 3,
-      subject_id: 3,
-      question_text: 'What is the acceleration due to gravity on Earth?',
-      question_type: 'choice',
-      options_json: ['8.9 m/s²', '9.8 m/s²', '10.2 m/s²', '9.5 m/s²'],
-      correct_answer: '9.8 m/s²',
-      user_answer: '10.2 m/s²',
-      source_info: 'Physics Chapter 5',
-      error_reason_type: 'concept_gap',
-      error_reason_detail: 'Need to memorize standard constants',
-      status: 'mastered',
-      difficulty_level: 1,
-      mistake_count: 3,
-      last_reviewed_at: new Date().toISOString(),
-      created_at: new Date(Date.now() - 172800000).toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ];
-  return mockQuestions;
-}
-
 // ==========================================
-// STATE: ADD MODAL
+// STATE: STATS
 // ==========================================
-const showAddModal = ref<boolean>(false);
-const isSubmitting = ref<boolean>(false);
-
-const defaultFormState = (): WrongQuestionCreate => ({
-  subject_id: undefined as unknown as number,
-  question_text: '',
-  question_type: 'choice',
-  options_json: ['', '', '', ''],
-  correct_answer: '',
-  user_answer: '',
-  difficulty_level: 1,
-  error_reason_type: null,
-  error_reason_detail: '',
-  source_info: '',
-  knowledge_point_ids: []
+const stats = ref<MistakeNotebookStats>({
+  total_wrong: 0,
+  new_count: 0,
+  reviewing_count: 0,
+  mastered_count: 0,
+  by_category: {}
 });
 
-const addForm = ref<WrongQuestionCreate>(defaultFormState());
+// ==========================================
+// METHODS: API CALLS
+// ==========================================
 
-// ==========================================
-// METHODS: API CALLS (Mock Implementation)
-// ==========================================
+async function fetchStats(): Promise<void> {
+  try {
+    const data = await mistakeNotebookApi.getStats(props.token);
+    stats.value = data;
+  } catch (error: unknown) {
+    console.error('Failed to fetch stats:', error);
+  }
+}
 
 async function fetchQuestions(): Promise<void> {
   isLoading.value = true;
-  
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
+
   try {
-    // Filter mock data based on filters
-    let filtered = generateMockData();
-    
-    if (filters.subject_id !== null) {
-      filtered = filtered.filter(q => q.subject_id === filters.subject_id);
-    }
-    if (filters.status !== null) {
-      filtered = filtered.filter(q => q.status === filters.status);
-    }
-    if (filters.needs_review) {
-      filtered = filtered.filter(q => q.status === 'new' || q.status === 'reviewing');
-    }
-    
-    // Paginate
-    const start = (filters.page - 1) * filters.size;
-    const end = start + filters.size;
-    
-    questions.value = filtered.slice(start, end);
-    totalQuestions.value = filtered.length;
+    const response = await mistakeNotebookApi.getWrongQuestions(props.token, {
+      page: filters.page,
+      size: filters.size,
+      category: filters.category,
+      status: filters.status,
+      needs_review: filters.needs_review
+    });
+
+    questions.value = response.data;
+    totalQuestions.value = response.total;
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : String(error));
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to fetch questions');
   } finally {
     isLoading.value = false;
   }
 }
 
-async function submitNewQuestion(): Promise<void> {
-  if (!addForm.value.subject_id || !addForm.value.question_text) {
-    ElMessage.warning('Subject and Question Text are required.');
-    return;
-  }
-
-  isSubmitting.value = true;
-  
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 800));
-  
+async function markAsMastered(logId: number): Promise<void> {
   try {
-    const newQuestion: WrongQuestionResponse = {
-      id: Date.now(),
-      subject_id: addForm.value.subject_id,
-      question_text: addForm.value.question_text,
-      question_type: addForm.value.question_type || 'choice',
-      options_json: addForm.value.options_json,
-      correct_answer: addForm.value.correct_answer,
-      user_answer: addForm.value.user_answer,
-      source_info: addForm.value.source_info,
-      error_reason_type: addForm.value.error_reason_type,
-      error_reason_detail: addForm.value.error_reason_detail,
-      status: 'new',
-      difficulty_level: addForm.value.difficulty_level || 1,
-      mistake_count: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    await mistakeNotebookApi.markAsMastered(props.token, logId);
     
-    questions.value.unshift(newQuestion);
-    totalQuestions.value++;
-    
-    ElMessage.success('Question added successfully!');
-    showAddModal.value = false;
-    addForm.value = defaultFormState();
-  } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : String(error));
-  } finally {
-    isSubmitting.value = false;
-  }
-}
-
-async function updateQuestionStatus(questionId: number, newStatus: QuestionStatusEnum): Promise<void> {
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  try {
-    const question = questions.value.find(q => q.id === questionId);
+    // Update local state
+    const question = questions.value.find(q => q.log_id === logId);
     if (question) {
-      question.status = newStatus;
-      question.updated_at = new Date().toISOString();
+      question.is_mastered = true;
+      question.status = 'mastered';
     }
-    ElMessage.success('Status updated.');
+    
+    ElMessage.success('Marked as mastered.');
+    fetchStats();
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : String(error));
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to update status');
   }
 }
 
-async function deleteQuestion(questionId: number): Promise<void> {
+async function markAsUnmastered(logId: number): Promise<void> {
+  try {
+    await mistakeNotebookApi.markAsUnmastered(props.token, logId);
+    
+    // Update local state
+    const question = questions.value.find(q => q.log_id === logId);
+    if (question) {
+      question.is_mastered = false;
+      question.status = 'reviewing';
+    }
+    
+    ElMessage.success('Marked as needs review.');
+    fetchStats();
+  } catch (error: unknown) {
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to update status');
+  }
+}
+
+async function removeQuestion(logId: number): Promise<void> {
   try {
     await ElMessageBox.confirm(
       'Are you sure you want to remove this question from the notebook?',
-      'Delete Question',
-      { confirmButtonText: 'Delete', cancelButtonText: 'Cancel', type: 'warning' }
+      'Remove Question',
+      { confirmButtonText: 'Remove', cancelButtonText: 'Cancel', type: 'warning' }
     );
+
+    await mistakeNotebookApi.removeWrongQuestion(props.token, logId);
     
-    questions.value = questions.value.filter(q => q.id !== questionId);
+    // Update local state
+    questions.value = questions.value.filter(q => q.log_id !== logId);
     totalQuestions.value--;
     ElMessage.success('Question removed');
+    fetchStats();
   } catch (error: unknown) {
     if (error !== 'cancel') {
-      ElMessage.error(error instanceof Error ? error.message : String(error));
+      ElMessage.error(error instanceof Error ? error.message : 'Failed to remove question');
     }
   }
 }
@@ -252,15 +151,11 @@ async function deleteQuestion(questionId: number): Promise<void> {
 // ==========================================
 
 function resetFilters(): void {
-  filters.subject_id = null;
+  filters.category = null;
   filters.status = null;
   filters.needs_review = false;
   filters.page = 1;
   fetchQuestions();
-}
-
-function getSubjectName(id: number): string {
-  return mockSubjects.find(s => s.id === id)?.name || `Subject ${id}`;
 }
 
 function getStatusType(status: QuestionStatusEnum): '' | 'success' | 'warning' | 'info' | 'danger' {
@@ -273,14 +168,21 @@ function getStatusType(status: QuestionStatusEnum): '' | 'success' | 'warning' |
   }
 }
 
-function getErrorReasonLabel(reason: ErrorReasonEnum | null): string {
-  if (!reason) return '';
-  const found = errorReasons.find(r => r.value === reason);
-  return found?.label || reason;
+function getQuestionTypeLabel(type: string): string {
+  const typeMap: Record<string, string> = {
+    'essay': 'Essay',
+    'single_choice': 'Single Choice',
+    'multiple_choice': 'Multiple Choice',
+    'fill_blank': 'Fill in Blank'
+  };
+  return typeMap[type] || type;
 }
 
-// Lifecycle
-fetchQuestions();
+// Lifecycle - fetch data on mount
+onMounted(() => {
+  fetchStats();
+  fetchQuestions();
+});
 </script>
 
 <template>
@@ -291,19 +193,6 @@ fetchQuestions();
         <h2 class="text-2xl font-bold text-gray-900">Mistake Notebook</h2>
         <p class="text-gray-500 text-sm mt-1">Track and review your incorrect answers to improve learning</p>
       </div>
-      <el-button 
-        type="primary" 
-        size="large" 
-        @click="showAddModal = true" 
-        class="shadow-sm bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0"
-      >
-        <template #icon>
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-          </svg>
-        </template>
-        Add Wrong Question
-      </el-button>
     </div>
 
     <!-- Stats Cards -->
@@ -316,8 +205,8 @@ fetchQuestions();
             </svg>
           </div>
           <div>
-            <div class="text-2xl font-bold text-gray-900">{{ totalQuestions }}</div>
-            <div class="text-xs text-gray-500">Total Questions</div>
+            <div class="text-2xl font-bold text-gray-900">{{ stats.total_wrong }}</div>
+            <div class="text-xs text-gray-500">Total Wrong</div>
           </div>
         </div>
       </el-card>
@@ -329,7 +218,7 @@ fetchQuestions();
             </svg>
           </div>
           <div>
-            <div class="text-2xl font-bold text-gray-900">{{ questions.filter(q => q.status === 'new').length }}</div>
+            <div class="text-2xl font-bold text-gray-900">{{ stats.new_count }}</div>
             <div class="text-xs text-gray-500">New Mistakes</div>
           </div>
         </div>
@@ -342,7 +231,7 @@ fetchQuestions();
             </svg>
           </div>
           <div>
-            <div class="text-2xl font-bold text-gray-900">{{ questions.filter(q => q.status === 'reviewing').length }}</div>
+            <div class="text-2xl font-bold text-gray-900">{{ stats.reviewing_count }}</div>
             <div class="text-xs text-gray-500">In Review</div>
           </div>
         </div>
@@ -355,7 +244,7 @@ fetchQuestions();
             </svg>
           </div>
           <div>
-            <div class="text-2xl font-bold text-gray-900">{{ questions.filter(q => q.status === 'mastered').length }}</div>
+            <div class="text-2xl font-bold text-gray-900">{{ stats.mastered_count }}</div>
             <div class="text-xs text-gray-500">Mastered</div>
           </div>
         </div>
@@ -366,15 +255,15 @@ fetchQuestions();
     <el-card class="shadow-sm border-0 mb-6" body-class="p-4">
       <div class="flex flex-wrap items-center gap-4">
         <div class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Subject:</label>
-          <el-select 
-            v-model="filters.subject_id" 
-            placeholder="All Subjects" 
-            class="w-40" 
-            clearable 
+          <label class="text-sm font-medium text-gray-700">Category:</label>
+          <el-select
+            v-model="filters.category"
+            placeholder="All Categories"
+            class="w-40"
+            clearable
             @change="fetchQuestions"
           >
-            <el-option v-for="sub in mockSubjects" :key="sub.id" :label="sub.name" :value="sub.id" />
+            <el-option v-for="cat in categoryOptions" :key="cat.id" :label="cat.name" :value="cat.name" />
           </el-select>
         </div>
 
@@ -419,71 +308,69 @@ fetchQuestions();
           v-if="questions.length === 0 && !isLoading" 
           description="No questions found. Add your first mistake to start tracking!"
           :image-size="120"
-        >
-          <el-button type="primary" @click="showAddModal = true">Add Question</el-button>
-        </el-empty>
+        />
 
         <div v-else class="divide-y divide-gray-100">
-          <div 
-            v-for="q in questions" 
-            :key="q.id" 
+          <div
+            v-for="q in questions"
+            :key="q.log_id"
             class="p-5 hover:bg-gray-50 transition-colors"
           >
             <div class="flex justify-between items-start gap-4">
               <!-- Left Content -->
               <div class="flex-grow">
                 <div class="flex items-center gap-2 mb-2">
-                  <el-tag size="small" effect="light" class="font-medium">{{ getSubjectName(q.subject_id) }}</el-tag>
-                  <el-tag 
-                    size="small" 
-                    :type="q.question_type === 'choice' ? 'info' : 'warning'" 
+                  <el-tag size="small" effect="light" class="font-medium">{{ q.category }}</el-tag>
+                  <el-tag
+                    size="small"
+                    :type="q.question_type.includes('choice') ? 'info' : 'warning'"
                     effect="plain"
                   >
-                    {{ q.question_type }}
+                    {{ getQuestionTypeLabel(q.question_type) }}
                   </el-tag>
-                  <el-tag 
-                    v-if="q.error_reason_type" 
-                    size="small" 
-                    type="danger" 
+                  <el-tag
+                    v-if="q.is_mastered"
+                    size="small"
+                    type="success"
                     effect="light"
                     class="ml-2"
                   >
-                    {{ getErrorReasonLabel(q.error_reason_type) }}
+                    Mastered
                   </el-tag>
                 </div>
 
                 <h3 class="text-base font-medium text-gray-900 leading-relaxed mb-3">
-                  {{ q.question_text }}
+                  {{ q.stem }}
                 </h3>
 
                 <!-- Options for choice questions -->
-                <div v-if="q.options_json && Array.isArray(q.options_json)" class="grid grid-cols-2 gap-2 mb-3 max-w-2xl">
-                  <div 
-                    v-for="(opt, idx) in q.options_json" 
+                <div v-if="q.options && Array.isArray(q.options)" class="grid grid-cols-2 gap-2 mb-3 max-w-2xl">
+                  <div
+                    v-for="(opt, idx) in q.options"
                     :key="idx"
                     class="px-3 py-2 rounded border text-sm"
                     :class="{
-                      'bg-green-50 border-green-300 text-green-800 font-medium': opt === q.correct_answer,
-                      'bg-red-50 border-red-300 text-red-800': opt === q.user_answer && opt !== q.correct_answer,
-                      'bg-gray-50 border-gray-200 text-gray-700': opt !== q.correct_answer && opt !== q.user_answer
+                      'bg-green-50 border-green-300 text-green-800 font-medium': opt === q.correct_ans_summary,
+                      'bg-red-50 border-red-300 text-red-800': opt === q.user_answer && opt !== q.correct_ans_summary,
+                      'bg-gray-50 border-gray-200 text-gray-700': opt !== q.correct_ans_summary && opt !== q.user_answer
                     }"
                   >
                     <span class="font-medium mr-2">{{ String.fromCharCode(65 + idx) }}.</span>
                     {{ opt }}
-                    <span v-if="opt === q.correct_answer" class="ml-2 text-xs">✓ Correct</span>
-                    <span v-if="opt === q.user_answer && opt !== q.correct_answer" class="ml-2 text-xs">✗ Your Answer</span>
+                    <span v-if="opt === q.correct_ans_summary" class="ml-2 text-xs">✓ Correct</span>
+                    <span v-if="opt === q.user_answer && opt !== q.correct_ans_summary" class="ml-2 text-xs">✗ Your Answer</span>
                   </div>
                 </div>
 
                 <!-- Answer Summary -->
                 <div class="flex items-center gap-4 text-sm mb-2">
                   <span class="text-gray-600">
-                    <strong>Correct:</strong> 
-                    <span class="text-green-600 font-medium">{{ q.correct_answer }}</span>
+                    <strong>Correct:</strong>
+                    <span class="text-green-600 font-medium">{{ q.correct_ans_summary }}</span>
                   </span>
                   <span class="text-gray-600">
                     <strong>Your Answer:</strong>
-                    <span :class="q.user_answer === q.correct_answer ? 'text-green-600' : 'text-red-600'" class="font-medium">{{ q.user_answer }}</span>
+                    <span :class="q.user_answer === q.correct_ans_summary ? 'text-green-600' : 'text-red-600'" class="font-medium">{{ q.user_answer }}</span>
                   </span>
                 </div>
 
@@ -496,9 +383,9 @@ fetchQuestions();
                     {{ q.source_info }}
                   </span>
                   <span class="flex items-center gap-1">
-                    <el-rate v-model="q.difficulty_level" disabled show-score text-color="#faad14" class="h-4 text-xs" />
+                    <span>Mistakes: {{ q.mistake_count }}</span>
                   </span>
-                  <span>Added: {{ new Date(q.created_at).toLocaleDateString() }}</span>
+                  <span>Attempted: {{ new Date(q.attempt_time).toLocaleDateString() }}</span>
                 </div>
 
                 <!-- Error Analysis -->
@@ -515,30 +402,30 @@ fetchQuestions();
                 </el-tag>
 
                 <div class="flex flex-col gap-2">
-                  <el-dropdown trigger="click" @command="(cmd: string) => updateQuestionStatus(q.id, cmd as QuestionStatusEnum)">
-                    <el-button size="small" text bg>
-                      Change Status
-                      <el-icon class="el-icon--right"><arrow-down /></el-icon>
-                    </el-button>
-                    <template #dropdown>
-                      <el-dropdown-menu>
-                        <el-dropdown-item 
-                          v-for="stat in statuses" 
-                          :key="stat.value" 
-                          :command="stat.value"
-                          :disabled="q.status === stat.value"
-                        >
-                          Mark as {{ stat.label }}
-                        </el-dropdown-item>
-                      </el-dropdown-menu>
-                    </template>
-                  </el-dropdown>
+                  <el-button
+                    v-if="!q.is_mastered"
+                    type="success"
+                    size="small"
+                    text
+                    @click="markAsMastered(q.log_id)"
+                  >
+                    Mark Mastered
+                  </el-button>
+                  <el-button
+                    v-else
+                    type="warning"
+                    size="small"
+                    text
+                    @click="markAsUnmastered(q.log_id)"
+                  >
+                    Mark Review
+                  </el-button>
 
-                  <el-button 
-                    type="danger" 
-                    size="small" 
-                    text 
-                    @click="deleteQuestion(q.id)"
+                  <el-button
+                    type="danger"
+                    size="small"
+                    text
+                    @click="removeQuestion(q.log_id)"
                   >
                     Remove
                   </el-button>
@@ -564,141 +451,12 @@ fetchQuestions();
         class="pagination-custom"
       />
     </div>
-
-    <!-- ========================================== -->
-    <!-- MODAL: ADD WRONG QUESTION -->
-    <!-- ========================================== -->
-    <el-dialog 
-      v-model="showAddModal" 
-      title="Record New Mistake" 
-      width="700px" 
-      class="rounded-xl overflow-hidden" 
-      :close-on-click-modal="false"
-    >
-      <el-form :model="addForm" label-position="top" label-class-name="font-medium text-gray-700">
-        <!-- Section 1: Core Info -->
-        <div class="grid grid-cols-2 gap-4">
-          <el-form-item label="Subject" required>
-            <el-select v-model="addForm.subject_id" placeholder="Select Subject" class="w-full">
-              <el-option v-for="sub in mockSubjects" :key="sub.id" :label="sub.name" :value="sub.id" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="Question Type">
-            <el-select v-model="addForm.question_type" class="w-full">
-              <el-option label="Multiple Choice" value="choice" />
-              <el-option label="Fill in Blank" value="fill" />
-              <el-option label="Solution / Essay" value="solution" />
-              <el-option label="Other" value="other" />
-            </el-select>
-          </el-form-item>
-        </div>
-
-        <el-form-item label="Question Text" required>
-          <el-input
-            v-model="addForm.question_text"
-            type="textarea"
-            :rows="3"
-            placeholder="Enter the question text..."
-          />
-        </el-form-item>
-
-        <!-- Dynamic Options (If Choice) -->
-        <div v-if="addForm.question_type === 'choice' && Array.isArray(addForm.options_json)" 
-             class="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200">
-          <label class="block text-sm font-medium text-gray-700 mb-3">Options</label>
-          <div v-for="(_, index) in addForm.options_json" :key="index" class="flex items-center gap-2 mb-2">
-            <span class="text-gray-500 font-medium w-6 h-8 flex items-center justify-center bg-white rounded border">{{ String.fromCharCode(65 + index) }}.</span>
-            <el-input v-model="(addForm.options_json as string[])[index]" placeholder="Option text" />
-          </div>
-        </div>
-
-        <!-- Section 2: Answers -->
-        <div class="grid grid-cols-2 gap-4">
-          <el-form-item label="Correct Answer">
-            <el-input v-model="addForm.correct_answer" placeholder="e.g., A, or 'x = 4'" />
-          </el-form-item>
-          <el-form-item label="Your Answer">
-            <el-input v-model="addForm.user_answer" placeholder="What did you put?" />
-          </el-form-item>
-        </div>
-
-        <!-- Section 3: Analysis -->
-        <el-divider border-style="dashed" class="my-4" />
-
-        <div class="grid grid-cols-2 gap-4">
-          <el-form-item label="Error Reason">
-            <el-select 
-              v-model="addForm.error_reason_type" 
-              placeholder="Select root cause" 
-              class="w-full" 
-              clearable
-            >
-              <el-option v-for="reason in errorReasons" :key="reason.value" :label="reason.label" :value="reason.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="Difficulty Level">
-            <div class="pt-2">
-              <el-rate v-model="addForm.difficulty_level" :max="5" show-score text-color="#faad14" />
-            </div>
-          </el-form-item>
-        </div>
-
-        <el-form-item label="Analysis / Notes">
-          <el-input 
-            v-model="addForm.error_reason_detail" 
-            type="textarea" 
-            :rows="2" 
-            placeholder="Why did you get this wrong? How to avoid it next time?" 
-          />
-        </el-form-item>
-
-        <el-form-item label="Source">
-          <el-input v-model="addForm.source_info" placeholder="e.g., 2025 Midterm Exam, Chapter 5" />
-        </el-form-item>
-      </el-form>
-
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <el-button @click="showAddModal = false">Cancel</el-button>
-          <el-button 
-            type="primary" 
-            @click="submitNewQuestion" 
-            :loading="isSubmitting" 
-            class="w-32 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0"
-          >
-            Save Record
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <style scoped>
 :deep(.el-card) {
   border-radius: 12px;
-}
-
-:deep(.el-dialog) {
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-:deep(.el-dialog__header) {
-  padding: 20px 24px;
-  border-bottom: 1px solid #f3f4f6;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-:deep(.el-dialog__title) {
-  color: white;
-  font-weight: 600;
-}
-
-:deep(.el-dialog__body) {
-  padding: 24px;
-  max-height: 70vh;
-  overflow-y: auto;
 }
 
 :deep(.el-pagination) {
