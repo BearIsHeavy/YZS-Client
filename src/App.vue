@@ -10,8 +10,9 @@ import ProfileView from './components/ProfileView.vue';
 import QuestionBankView from './components/QuestionBankView.vue';
 import UploadQuestions from './components/UploadQuestions.vue';
 import MistakeNotebook from './components/MistakeNotebook.vue';
+import PracticeView from './components/PracticeView.vue';
 
-type DashboardMenu = 'profile' | 'questions' | 'upload' | 'mistakes';
+type DashboardMenu = 'profile' | 'questions' | 'upload' | 'practice' | 'mistakes';
 
 // Global App State
 const token = ref<string | null>(localStorage.getItem('access_token'));
@@ -84,6 +85,7 @@ const menuItems = [
   { key: 'profile' as DashboardMenu, label: 'Profile', icon: 'User' },
   { key: 'questions' as DashboardMenu, label: 'Question Banks', icon: 'Files' },
   { key: 'upload' as DashboardMenu, label: 'Upload Questions', icon: 'Upload' },
+  { key: 'practice' as DashboardMenu, label: 'Practice', icon: 'Reading' },
   { key: 'mistakes' as DashboardMenu, label: 'Mistake Notebook', icon: 'Document' }
 ] as const;
 </script>
@@ -200,6 +202,9 @@ const menuItems = [
                 <svg v-else-if="item.key === 'upload'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
                 </svg>
+                <svg v-else-if="item.key === 'practice'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
                 <svg v-else-if="item.key === 'mistakes'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
@@ -230,9 +235,9 @@ const menuItems = [
         />
 
         <div class="h-full">
-          <ProfileView 
-            v-if="activeMenu === 'profile'" 
-            :user="currentUser" 
+          <ProfileView
+            v-if="activeMenu === 'profile'"
+            :user="currentUser"
             @user-updated="handleUserUpdate"
           />
 
@@ -242,14 +247,19 @@ const menuItems = [
             @navigate-to-upload="activeMenu = 'upload'"
           />
 
-          <UploadQuestions 
-            v-else-if="activeMenu === 'upload'" 
-            :token="token" 
+          <UploadQuestions
+            v-else-if="activeMenu === 'upload'"
+            :token="token"
           />
 
-          <MistakeNotebook 
-            v-else-if="activeMenu === 'mistakes'" 
-            :token="token" 
+          <PracticeView
+            v-else-if="activeMenu === 'practice'"
+            :token="token"
+          />
+
+          <MistakeNotebook
+            v-else-if="activeMenu === 'mistakes'"
+            :token="token"
           />
         </div>
       </main>

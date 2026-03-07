@@ -471,5 +471,65 @@ export const mistakeNotebookApi = {
     });
     if (!response.ok) await handleApiError(response);
     return null;
+  },
+
+  /**
+   * Submit an answer for a practice question
+   * POST /practice/submit-answer
+   * 
+   * @param token - JWT access token
+   * @param answerData - Answer submission data
+   * @returns Promise with answer result
+   */
+  submitAnswer: async (token: string, answerData: {
+    question_no: number;
+    user_answer: string;
+    time_spent_seconds?: number | null;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/practice/submit-answer`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(answerData)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Start a practice session
+   * POST /practice/start-session
+   * 
+   * @param token - JWT access token
+   * @param sessionData - Practice session configuration
+   * @returns Promise with practice questions
+   */
+  startPracticeSession: async (token: string, sessionData: {
+    bank_id: number;
+    question_count?: number;
+    category?: string | null;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/practice/start-session`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(sessionData)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get a single practice question
+   * GET /practice/question/{question_no}
+   * 
+   * @param token - JWT access token
+   * @param questionNo - Question ID
+   * @returns Promise with question data
+   */
+  getPracticeQuestion: async (token: string, questionNo: number) => {
+    const response = await fetch(`${API_BASE_URL}/practice/question/${questionNo}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
   }
 };

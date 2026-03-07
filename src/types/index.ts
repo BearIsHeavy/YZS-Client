@@ -216,6 +216,36 @@ export interface MistakeNotebookStats {
   by_category: Record<string, number>;
 }
 
+// ==========================================
+// PRACTICE & ANSWER SUBMISSION TYPES
+// ==========================================
+
+export interface PracticeQuestion {
+  question_no: number;
+  category: string;
+  stem: string;
+  question_type: string;
+  options: Record<string, unknown> | null;
+  difficulty_level: number;
+}
+
+export interface PracticeSessionResponse {
+  bank_id: number;
+  bank_name: string;
+  questions: PracticeQuestion[];
+  total_questions: number;
+}
+
+export interface AnswerSubmitResponse {
+  is_correct: boolean;
+  question_no: number;
+  correct_answer: string;
+  user_answer: string;
+  explanation: string | null;
+  log_id: number;
+  is_first_wrong: boolean;
+}
+
 export interface ReviewRecordCreate {
   question_id: number;
   result: ReviewResultEnum;
