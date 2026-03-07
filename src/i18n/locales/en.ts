@@ -45,9 +45,11 @@ export default {
   // Profile
   profile: {
     title: 'My Profile',
+    subtitle: 'Manage your account information',
     editProfile: 'Edit Profile',
     saveChanges: 'Save Changes',
     memberSince: 'Member since',
+    userId: 'User ID',
     emailVerified: 'Email verified',
     phoneVerified: 'Phone verified',
   },
@@ -76,14 +78,14 @@ export default {
   upload: {
     title: 'Upload Questions',
     subtitle: 'Import questions via CSV, XML, or add them individually',
-    selectBank: 'Select Question Bank',
+    selectBank: 'Please select a question bank',
     noBanksWarning: 'No question banks found. Create one in the Question Bank tab first.',
     csvUpload: 'CSV Upload',
     xmlUpload: 'XML Upload',
     singleQuestion: 'Single Question',
     csvFormat: 'CSV Format',
     xmlFormat: 'XML Format',
-    uploadFile: 'Upload a file',
+    uploadFile: 'Please select a file first',
     orDragDrop: 'or drag and drop',
     csvFiles: 'CSV files',
     xmlFiles: 'XML files',
@@ -91,6 +93,7 @@ export default {
     upload: 'Upload',
     uploadSuccessful: 'Upload successful!',
     questionsImported: 'questions imported',
+    questionUploaded: 'Question uploaded successfully!',
     category: 'Category',
     questionType: 'Question Type',
     stem: 'Question Text',
@@ -110,6 +113,10 @@ export default {
     fillInBlank: 'Fill in Blank',
     jsonFormat: 'JSON format for options',
     required: 'Required',
+    requiredFields: 'Required fields are missing',
+    invalidFileType: 'Invalid file type',
+    fileTooLarge: 'File size exceeds limit',
+    useSingleTab: 'Please use the Single Question tab',
   },
 
   // Practice Mode

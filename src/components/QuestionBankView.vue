@@ -4,6 +4,9 @@ import { ref, onMounted } from 'vue';
 import type { QuestionBankResponse, QBQuestionResponse } from '../types';
 import { questionBankApi } from '../utils/api';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { useI18n } from '../i18n';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   token: string;
@@ -36,7 +39,7 @@ async function fetchQuestionBanks(): Promise<void> {
     const data = await questionBankApi.getAll(props.token);
     questionBanks.value = data;
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : 'Failed to fetch question banks');
+    ElMessage.error(error instanceof Error ? error.message : t('messages.uploadFailed'));
   } finally {
     isLoading.value = false;
   }
@@ -49,7 +52,7 @@ async function fetchQuestions(bankId: number): Promise<void> {
     const data = await questionBankApi.getQuestions(props.token, bankId);
     questions.value = data;
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : 'Failed to fetch questions');
+    ElMessage.error(error instanceof Error ? error.message : t('messages.uploadFailed'));
   } finally {
     isLoadingQuestions.value = false;
   }
@@ -64,7 +67,7 @@ async function selectQuestionBank(bank: QuestionBankResponse): Promise<void> {
 // Create new question bank
 async function createQuestionBank(): Promise<void> {
   if (!newBankForm.value.name || newBankForm.value.name.trim() === '') {
-    ElMessage.warning('Question bank name is required');
+    ElMessage.warning(t('questionBank.bankName') + ' ' + t('common.required'));
     return;
   }
 
@@ -75,11 +78,11 @@ async function createQuestionBank(): Promise<void> {
     selectedBank.value = newBank;
     await fetchQuestions(newBank.bank_id);
 
-    ElMessage.success('Question bank created successfully!');
+    ElMessage.success(t('messages.saveSuccess'));
     showCreateDialog.value = false;
     newBankForm.value = { name: '', is_public: false, description: '' };
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : 'Failed to create question bank');
+    ElMessage.error(error instanceof Error ? error.message : t('messages.saveFailed'));
   } finally {
     isCreating.value = false;
   }
@@ -100,10 +103,10 @@ async function deleteQuestionBank(bank: QuestionBankResponse): Promise<void> {
       selectedBank.value = null;
       questions.value = [];
     }
-    ElMessage.success('Question bank deleted');
+    ElMessage.success(t('messages.deleteSuccess'));
   } catch (error: unknown) {
     if (error !== 'cancel') {
-      ElMessage.error(error instanceof Error ? error.message : 'Failed to delete question bank');
+      ElMessage.error(error instanceof Error ? error.message : t('messages.deleteFailed'));
     }
   }
 }
@@ -138,8 +141,8 @@ onMounted(() => {
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h2 class="text-2xl font-bold text-gray-900">Question Bank Management</h2>
-        <p class="text-gray-500 text-sm mt-1">Create and manage your question collections</p>
+        <h2 class="text-2xl font-bold text-gray-900">{{ t('questionBank.title') }}</h2>
+        <p class="text-gray-500 text-sm mt-1">{{ t('questionBank.description', 'Create and manage your question collections') }}</p>
       </div>
       <div class="flex gap-2">
         <el-button @click="fetchQuestionBanks" :loading="isLoading">
@@ -148,7 +151,7 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
             </svg>
           </template>
-          Refresh
+          {{ t('common.clear') }}
         </el-button>
         <el-button type="primary" @click="showCreateDialog = true">
           <template #icon>
@@ -156,7 +159,7 @@ onMounted(() => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
           </template>
-          New Bank
+          {{ t('questionBank.createNew') }}
         </el-button>
       </div>
     </div>

@@ -45,9 +45,11 @@ export default {
   // Profile
   profile: {
     title: '我的资料',
+    subtitle: '管理您的账户信息',
     editProfile: '编辑资料',
     saveChanges: '保存更改',
     memberSince: '注册时间',
+    userId: '用户 ID',
     emailVerified: '邮箱已验证',
     phoneVerified: '手机已验证',
   },
@@ -76,14 +78,14 @@ export default {
   upload: {
     title: '上传题目',
     subtitle: '通过 CSV、XML 批量导入题目或单独添加',
-    selectBank: '选择题库',
+    selectBank: '请选择题库',
     noBanksWarning: '未找到题库。请先在题库管理标签页创建一个题库。',
     csvUpload: 'CSV 上传',
     xmlUpload: 'XML 上传',
     singleQuestion: '单题上传',
     csvFormat: 'CSV 格式',
     xmlFormat: 'XML 格式',
-    uploadFile: '上传文件',
+    uploadFile: '请先选择文件',
     orDragDrop: '或拖拽文件到此处',
     csvFiles: 'CSV 文件',
     xmlFiles: 'XML 文件',
@@ -91,6 +93,7 @@ export default {
     upload: '上传',
     uploadSuccessful: '上传成功！',
     questionsImported: '道题目已导入',
+    questionUploaded: '题目上传成功！',
     category: '类别',
     questionType: '题目类型',
     stem: '题目内容',
@@ -110,6 +113,10 @@ export default {
     fillInBlank: '填空题',
     jsonFormat: '选项使用 JSON 格式',
     required: '必填',
+    requiredFields: '必填字段不能为空',
+    invalidFileType: '无效的文件类型',
+    fileTooLarge: '文件大小超出限制',
+    useSingleTab: '请使用单题上传标签页',
   },
 
   // Practice Mode

@@ -4,6 +4,9 @@ import { ref } from 'vue';
 import type { QuestionBankResponse } from '../types';
 import { uploadApi, questionBankApi } from '../utils/api';
 import { ElMessage } from 'element-plus';
+import { useI18n } from '../i18n';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   token: string;
@@ -40,7 +43,7 @@ async function fetchQuestionBanks(): Promise<void> {
     const data = await questionBankApi.getAll(props.token);
     questionBanks.value = data;
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : 'Failed to fetch question banks');
+    ElMessage.error(error instanceof Error ? error.message : t('messages.uploadFailed'));
   } finally {
     isLoadingBanks.value = false;
   }
@@ -77,7 +80,7 @@ function onDrop(event: DragEvent): void {
 // Validate file before upload
 function validateFile(file: File | null, expectedType: 'csv' | 'xml'): boolean {
   if (!file) {
-    ElMessage.warning('Please select a file first');
+    ElMessage.warning(t('upload.uploadFile'));
     return false;
   }
   
@@ -88,14 +91,14 @@ function validateFile(file: File | null, expectedType: 'csv' | 'xml'): boolean {
   
   const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
   if (!validExtensions[expectedType].includes(fileExtension)) {
-    ElMessage.error(`Invalid file type. Please select a ${expectedType.toUpperCase()} file.`);
+    ElMessage.error(t('upload.invalidFileType'));
     return false;
   }
   
   // Check file size (max 10MB)
   const maxSize = 10 * 1024 * 1024;
   if (file.size > maxSize) {
-    ElMessage.error('File size exceeds 10MB limit');
+    ElMessage.error(t('upload.fileTooLarge'));
     return false;
   }
   
@@ -106,7 +109,7 @@ function validateFile(file: File | null, expectedType: 'csv' | 'xml'): boolean {
 async function uploadFile(): Promise<void> {
   // Only allow CSV and XML upload methods
   if (uploadMethod.value === 'single') {
-    ElMessage.warning('Please use the Single Question tab to upload a single question');
+    ElMessage.warning(t('upload.useSingleTab'));
     return;
   }
   
@@ -114,7 +117,7 @@ async function uploadFile(): Promise<void> {
     return;
   }
   if (!selectedBankId.value) {
-    ElMessage.warning('Please select a question bank');
+    ElMessage.warning(t('upload.selectBank'));
     return;
   }
 
@@ -129,14 +132,14 @@ async function uploadFile(): Promise<void> {
 
     // Parse response - backend returns { detail: string, questions_added: number }
     const questionsCount = result.questions_added || 0;
-    ElMessage.success(`Upload successful! ${questionsCount} questions imported.`);
+    ElMessage.success(`${t('upload.uploadSuccessful')} ${questionsCount} ${t('upload.questionsImported')}`);
     selectedFile.value = null;
     // Reset file input based on current upload method
     const fileInputId = uploadMethod.value === 'csv' ? 'csv-file-upload' : 'xml-file-upload';
     const fileInput = document.getElementById(fileInputId) as HTMLInputElement;
     if (fileInput) fileInput.value = '';
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : 'Upload failed');
+    ElMessage.error(error instanceof Error ? error.message : t('messages.uploadFailed'));
   } finally {
     isUploading.value = false;
   }
@@ -145,11 +148,11 @@ async function uploadFile(): Promise<void> {
 // Upload single question
 async function uploadSingleQuestion(): Promise<void> {
   if (!singleQuestionForm.value.category || !singleQuestionForm.value.stem) {
-    ElMessage.warning('Category and Stem are required fields');
+    ElMessage.warning(t('upload.requiredFields'));
     return;
   }
   if (!selectedBankId.value) {
-    ElMessage.warning('Please select a question bank');
+    ElMessage.warning(t('upload.selectBank'));
     return;
   }
 
@@ -159,7 +162,7 @@ async function uploadSingleQuestion(): Promise<void> {
       bank_id: selectedBankId.value,
       ...singleQuestionForm.value
     });
-    ElMessage.success('Question uploaded successfully!');
+    ElMessage.success(t('upload.questionUploaded'));
 
     // Reset form
     singleQuestionForm.value = {
@@ -174,7 +177,7 @@ async function uploadSingleQuestion(): Promise<void> {
       explanation: ''
     };
   } catch (error: unknown) {
-    ElMessage.error(error instanceof Error ? error.message : 'Upload failed');
+    ElMessage.error(error instanceof Error ? error.message : t('messages.uploadFailed'));
   } finally {
     isUploading.value = false;
   }

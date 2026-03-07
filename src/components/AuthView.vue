@@ -3,6 +3,9 @@
 import { ref } from 'vue';
 import type { UserCreate } from '../types';
 import { userApi } from '../utils/api';
+import { useI18n } from '../i18n';
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   (e: 'authenticated', token: string): void;
@@ -13,8 +16,8 @@ const isLoading = ref<boolean>(false);
 const errorMessage = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
 
-const registerForm = ref<UserCreate>({ 
-  email: '', 
+const registerForm = ref<UserCreate>({
+  email: '',
   name: '',
   password: ''
 });
@@ -28,10 +31,10 @@ async function registerUser(): Promise<void> {
   try {
     await userApi.register(registerForm.value);
     registerForm.value = { email: '', name: '', password: '' };
-    successMessage.value = 'Registration successful! Please log in.';
+    successMessage.value = t('messages.registerSuccess');
     currentAuthView.value = 'login';
   } catch (error: unknown) {
-    errorMessage.value = error instanceof Error ? error.message : String(error);
+    errorMessage.value = error instanceof Error ? error.message : t('messages.registerFailed');
   } finally {
     isLoading.value = false;
   }
@@ -47,7 +50,7 @@ async function loginUser(): Promise<void> {
     loginForm.value = { username: '', password: '' };
     emit('authenticated', data.access_token);
   } catch (error: unknown) {
-    errorMessage.value = error instanceof Error ? error.message : String(error);
+    errorMessage.value = error instanceof Error ? error.message : t('messages.loginFailed');
   } finally {
     isLoading.value = false;
   }
@@ -66,161 +69,155 @@ async function loginUser(): Promise<void> {
         </div>
       </div>
       <h2 class="mt-6 text-3xl font-bold text-gray-900">
-        <span v-if="currentAuthView === 'login'">Welcome Back</span>
-        <span v-else>Create Account</span>
+        <span v-if="currentAuthView === 'login'">{{ t('auth.loginTitle') }}</span>
+        <span v-else>{{ t('auth.registerTitle') }}</span>
       </h2>
       <p class="mt-2 text-sm text-gray-600">
-        <span v-if="currentAuthView === 'login'">Sign in to access your question banks</span>
-        <span v-else>Join us to start managing questions</span>
+        <span v-if="currentAuthView === 'login'">{{ t('auth.loginSubtitle') }}</span>
+        <span v-else>{{ t('auth.registerSubtitle') }}</span>
       </p>
     </div>
 
     <!-- Auth Card -->
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
       <el-card class="shadow-xl border-0" body-class="px-8 py-10">
-        <el-alert 
-          v-if="errorMessage" 
-          :title="errorMessage" 
-          type="error" 
-          show-icon 
-          :closable="false" 
-          class="mb-6" 
+        <el-alert
+          v-if="errorMessage"
+          :title="errorMessage"
+          type="error"
+          show-icon
+          :closable="false"
+          class="mb-6"
         />
-        <el-alert 
-          v-if="successMessage" 
-          :title="successMessage" 
-          type="success" 
-          show-icon 
-          :closable="false" 
-          class="mb-6" 
+        <el-alert
+          v-if="successMessage"
+          :title="successMessage"
+          type="success"
+          show-icon
+          :closable="false"
+          class="mb-6"
         />
 
         <!-- Login Form -->
         <el-form v-if="currentAuthView === 'login'" label-position="top">
-          <el-form-item label="Email Address">
-            <el-input 
-              v-model="loginForm.username" 
-              type="email" 
-              placeholder="Enter your email"
-              prefix-icon="Message"
-              size="large"
-              clearable
+          <el-form-item :label="t('auth.email')">
+            <el-input
+              v-model="loginForm.username"
+              type="email"
+              placeholder="your@email.com"
+              :disabled="isLoading"
             />
           </el-form-item>
-          <el-form-item label="Password">
-            <el-input 
-              v-model="loginForm.password" 
-              type="password" 
-              show-password 
+
+          <el-form-item :label="t('auth.password')">
+            <el-input
+              v-model="loginForm.password"
+              type="password"
               placeholder="Enter your password"
-              prefix-icon="Lock"
-              size="large"
+              :disabled="isLoading"
+              @keyup.enter="loginUser"
             />
           </el-form-item>
-          <el-form-item>
-            <el-button 
-              type="primary" 
-              native-type="submit" 
-              :loading="isLoading" 
-              size="large"
-              class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0 shadow-md"
-              @click="loginUser"
-            >
-              Sign In
+
+          <el-button
+            type="primary"
+            @click="loginUser"
+            :loading="isLoading"
+            class="w-full mb-4"
+            size="large"
+          >
+            {{ t('auth.login') }}
+          </el-button>
+
+          <div class="text-center text-sm">
+            <span class="text-gray-600">{{ t('auth.noAccount') }}</span>
+            <el-button type="link" @click="currentAuthView = 'register'" class="text-indigo-600">
+              {{ t('auth.registerNow') }}
             </el-button>
-          </el-form-item>
-          <div class="text-center mt-4">
-            <el-link 
-              type="primary" 
-              @click.prevent="currentAuthView = 'register'; errorMessage = null;"
-              class="text-sm font-medium"
-            >
-              Don't have an account? <span class="underline">Register here</span>
-            </el-link>
           </div>
         </el-form>
 
         <!-- Register Form -->
         <el-form v-else label-position="top">
-          <el-form-item label="Full Name">
-            <el-input 
-              v-model="registerForm.name" 
-              placeholder="Enter your name"
-              prefix-icon="User"
-              size="large"
-              clearable
+          <el-form-item :label="t('auth.name')" required>
+            <el-input
+              v-model="registerForm.name"
+              placeholder="Your full name"
+              :disabled="isLoading"
             />
           </el-form-item>
-          <el-form-item label="Email Address">
-            <el-input 
-              v-model="registerForm.email" 
-              type="email" 
-              placeholder="Enter your email"
-              prefix-icon="Message"
-              size="large"
-              clearable
+
+          <el-form-item :label="t('auth.email')" required>
+            <el-input
+              v-model="registerForm.email"
+              type="email"
+              placeholder="your@email.com"
+              :disabled="isLoading"
             />
           </el-form-item>
-          <el-form-item label="Password">
-            <el-input 
-              v-model="registerForm.password" 
-              type="password" 
-              show-password 
-              placeholder="Create a password"
-              prefix-icon="Lock"
-              size="large"
-              minlength="6"
-              maxlength="64"
+
+          <el-form-item :label="t('auth.password')" required>
+            <el-input
+              v-model="registerForm.password"
+              type="password"
+              placeholder="At least 6 characters"
+              :disabled="isLoading"
             />
           </el-form-item>
-          <el-form-item>
-            <el-button 
-              type="primary" 
-              native-type="submit" 
-              :loading="isLoading" 
-              size="large"
-              class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0 shadow-md"
-              @click="registerUser"
-            >
-              Create Account
+
+          <el-form-item :label="t('auth.phone')">
+            <el-input
+              v-model="registerForm.phone"
+              placeholder="Your phone number (optional)"
+              :disabled="isLoading"
+            />
+          </el-form-item>
+
+          <el-form-item :label="t('auth.gender')">
+            <el-select v-model="registerForm.gender" class="w-full" :disabled="isLoading">
+              <el-option :label="t('auth.genderUnknown')" :value="0" />
+              <el-option :label="t('auth.genderMale')" :value="1" />
+              <el-option :label="t('auth.genderFemale')" :value="2" />
+            </el-select>
+          </el-form-item>
+
+          <el-button
+            type="primary"
+            @click="registerUser"
+            :loading="isLoading"
+            class="w-full mb-4"
+            size="large"
+          >
+            {{ t('auth.register') }}
+          </el-button>
+
+          <div class="text-center text-sm">
+            <span class="text-gray-600">{{ t('auth.alreadyHaveAccount') }}</span>
+            <el-button type="link" @click="currentAuthView = 'login'" class="text-indigo-600">
+              {{ t('auth.loginNow') }}
             </el-button>
-          </el-form-item>
-          <div class="text-center mt-4">
-            <el-link 
-              type="primary" 
-              @click.prevent="currentAuthView = 'login'; errorMessage = null;"
-              class="text-sm font-medium"
-            >
-              Already have an account? <span class="underline">Sign in</span>
-            </el-link>
           </div>
         </el-form>
       </el-card>
+    </div>
 
-      <!-- Footer -->
-      <p class="mt-8 text-center text-xs text-gray-500">
-        &copy; 2026 YanZhuShou - Question Bank Management System
-      </p>
+    <!-- Footer -->
+    <div class="mt-8 text-center text-sm text-gray-600">
+      <p>&copy; {{ new Date().getFullYear() }} YanZhuShou. All rights reserved.</p>
     </div>
   </div>
 </template>
 
 <style scoped>
+:deep(.el-card) {
+  border-radius: 16px;
+}
+
 :deep(.el-input__wrapper) {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
 }
 
-:deep(.el-input.is-focus .el-input__wrapper) {
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-}
-
 :deep(.el-button--primary) {
-  transition: all 0.3s ease;
-}
-
-:deep(.el-card) {
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 </style>
