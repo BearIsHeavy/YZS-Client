@@ -3,6 +3,7 @@
 import { ref, onMounted } from 'vue';
 import type { UserResponse } from './types';
 import { userApi } from './utils/api';
+import { useI18n } from './i18n';
 
 // Import components
 import AuthView from './components/AuthView.vue';
@@ -11,6 +12,10 @@ import QuestionBankView from './components/QuestionBankView.vue';
 import UploadQuestions from './components/UploadQuestions.vue';
 import MistakeNotebook from './components/MistakeNotebook.vue';
 import PracticeView from './components/PracticeView.vue';
+import LanguageSwitcher from './components/LanguageSwitcher.vue';
+
+// Initialize i18n
+const { t } = useI18n();
 
 type DashboardMenu = 'profile' | 'questions' | 'upload' | 'practice' | 'mistakes';
 
@@ -80,13 +85,13 @@ onMounted(() => {
   }
 });
 
-// Menu items configuration
+// Menu items configuration (using i18n)
 const menuItems = [
-  { key: 'profile' as DashboardMenu, label: 'Profile', icon: 'User' },
-  { key: 'questions' as DashboardMenu, label: 'Question Banks', icon: 'Files' },
-  { key: 'upload' as DashboardMenu, label: 'Upload Questions', icon: 'Upload' },
-  { key: 'practice' as DashboardMenu, label: 'Practice', icon: 'Reading' },
-  { key: 'mistakes' as DashboardMenu, label: 'Mistake Notebook', icon: 'Document' }
+  { key: 'profile' as DashboardMenu, labelKey: 'nav.profile', icon: 'User' },
+  { key: 'questions' as DashboardMenu, labelKey: 'nav.questions', icon: 'Files' },
+  { key: 'upload' as DashboardMenu, labelKey: 'nav.upload', icon: 'Upload' },
+  { key: 'practice' as DashboardMenu, labelKey: 'nav.practice', icon: 'Reading' },
+  { key: 'mistakes' as DashboardMenu, labelKey: 'nav.mistakes', icon: 'Document' }
 ] as const;
 </script>
 
@@ -120,12 +125,15 @@ const menuItems = [
           </svg>
         </div>
         <div>
-          <h1 class="text-lg font-bold">YanZhuShou</h1>
-          <p class="text-xs text-white/80">Question Bank Management</p>
+          <h1 class="text-lg font-bold">{{ t('app.name') }}</h1>
+          <p class="text-xs text-white/80">{{ t('app.tagline') }}</p>
         </div>
       </div>
-      
+
       <div class="flex items-center gap-4">
+        <!-- Language Switcher -->
+        <LanguageSwitcher />
+        
         <div class="hidden md:flex items-center gap-3 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
           <div class="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
             {{ currentUser.name.charAt(0).toUpperCase() }}
@@ -135,9 +143,9 @@ const menuItems = [
             <div class="text-xs text-white/70">{{ currentUser.email }}</div>
           </div>
         </div>
-        <el-button 
-          size="small" 
-          @click="logoutUser" 
+        <el-button
+          size="small"
+          @click="logoutUser"
           class="bg-white/20 hover:bg-white/30 border-0 text-white"
           circle
         >
@@ -208,7 +216,7 @@ const menuItems = [
                 <svg v-else-if="item.key === 'mistakes'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <span v-show="!isSidebarCollapsed">{{ item.label }}</span>
+                <span v-show="!isSidebarCollapsed">{{ t(item.labelKey) }}</span>
               </span>
             </template>
           </el-menu-item>
