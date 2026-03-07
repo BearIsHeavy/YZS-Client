@@ -193,6 +193,11 @@ export const uploadApi = {
   /**
    * Upload questions from CSV file
    * POST /upload/csv
+   * 
+   * @param token - JWT access token
+   * @param bankId - Target question bank ID
+   * @param file - CSV file to upload
+   * @returns Promise with upload result
    */
   uploadCsv: async (token: string, bankId: number, file: File) => {
     const formData = new FormData();
@@ -201,7 +206,10 @@ export const uploadApi = {
 
     const response = await fetch(`${API_BASE_URL}/upload/csv`, {
       method: 'POST',
-      headers: getUploadHeaders(token),
+      headers: {
+        'Authorization': `Bearer ${token}`
+        // Note: Content-Type is automatically set by browser for FormData with boundary
+      },
       body: formData
     });
     if (!response.ok) await handleApiError(response);
@@ -211,6 +219,11 @@ export const uploadApi = {
   /**
    * Upload questions from XML file
    * POST /upload/xml
+   * 
+   * @param token - JWT access token
+   * @param bankId - Target question bank ID
+   * @param file - XML file to upload
+   * @returns Promise with upload result
    */
   uploadXml: async (token: string, bankId: number, file: File) => {
     const formData = new FormData();
@@ -219,7 +232,10 @@ export const uploadApi = {
 
     const response = await fetch(`${API_BASE_URL}/upload/xml`, {
       method: 'POST',
-      headers: getUploadHeaders(token),
+      headers: {
+        'Authorization': `Bearer ${token}`
+        // Note: Content-Type is automatically set by browser for FormData with boundary
+      },
       body: formData
     });
     if (!response.ok) await handleApiError(response);
