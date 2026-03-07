@@ -313,6 +313,21 @@ export const uploadApi = {
 
 export const mistakeNotebookApi = {
   /**
+   * Get unique categories from user's wrong questions
+   * GET /mistake-notebook/categories
+   * 
+   * @param token - JWT access token
+   * @returns Promise with list of unique categories
+   */
+  getCategories: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/mistake-notebook/categories`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
    * Get paginated list of wrong questions for current user
    * GET /mistake-notebook/questions
    * 

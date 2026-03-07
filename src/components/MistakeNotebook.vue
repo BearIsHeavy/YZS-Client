@@ -28,13 +28,9 @@ const filters = reactive({
   needs_review: false
 });
 
-// Category options - derived from qb_questions.category field
-const categoryOptions = [
-  { id: 1, name: 'Mathematics' },
-  { id: 2, name: 'English' },
-  { id: 3, name: 'Physics' },
-  { id: 4, name: 'Chemistry' }
-];
+// Category options - will be populated dynamically from API
+const categoryOptions = ref<string[]>([]);
+const isLoadingCategories = ref<boolean>(false);
 
 const statuses: { label: string; value: QuestionStatusEnum }[] = [
   { label: 'New', value: 'new' },
@@ -57,6 +53,18 @@ const stats = ref<MistakeNotebookStats>({
 // ==========================================
 // METHODS: API CALLS
 // ==========================================
+
+async function fetchCategories(): Promise<void> {
+  isLoadingCategories.value = true;
+  try {
+    const data = await mistakeNotebookApi.getCategories(props.token);
+    categoryOptions.value = data;
+  } catch (error: unknown) {
+    console.error('Failed to fetch categories:', error);
+  } finally {
+    isLoadingCategories.value = false;
+  }
+}
 
 async function fetchStats(): Promise<void> {
   try {
@@ -180,6 +188,7 @@ function getQuestionTypeLabel(type: string): string {
 
 // Lifecycle - fetch data on mount
 onMounted(() => {
+  fetchCategories();
   fetchStats();
   fetchQuestions();
 });
@@ -261,9 +270,10 @@ onMounted(() => {
             placeholder="All Categories"
             class="w-40"
             clearable
+            :loading="isLoadingCategories"
             @change="fetchQuestions"
           >
-            <el-option v-for="cat in categoryOptions" :key="cat.id" :label="cat.name" :value="cat.name" />
+            <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
           </el-select>
         </div>
 
