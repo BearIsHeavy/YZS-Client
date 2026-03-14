@@ -7,9 +7,11 @@ import type {
   FeedbackCreate,
   FeedbackCategoryEnum,
   FeedbackStats,
-  FeedbackSubmissionStatus
+  FeedbackSubmissionStatus,
+  FeedbackUpdate,
+  UserResponse
 } from '../types';
-import { feedbackApi } from '../utils/api';
+import { feedbackApi, userApi } from '../utils/api';
 import { useI18n } from '../i18n';
 import {
   FEEDBACK_CATEGORY_LABELS,
@@ -28,6 +30,7 @@ const feedbackList = ref<FeedbackResponse[]>([]);
 const isLoading = ref<boolean>(false);
 const isLoadingStats = ref<boolean>(false);
 const errorMessage = ref<string | null>(null);
+const successMessage = ref<string | null>(null);
 const currentPage = ref<number>(1);
 const totalPages = ref<number>(1);
 const totalItems = ref<number>(0);
@@ -36,6 +39,7 @@ const totalItems = ref<number>(0);
 const selectedCategory = ref<FeedbackCategoryEnum | null>(null);
 const selectedStatus = ref<'pending' | 'in_progress' | 'completed' | 'rejected' | null>(null);
 const sortBy = ref<'vote_count' | 'created_at'>('vote_count');
+const showMyFeedbackOnly = ref<boolean>(false);
 
 // Stats
 const stats = ref<FeedbackStats | null>(null);
@@ -49,12 +53,35 @@ const submissionStatus = ref<FeedbackSubmissionStatus | null>(null);
 
 // Vote loading states
 const votingIds = ref<Set<number>>(new Set());
+const voteErrorIds = ref<Set<number>>(new Set());
+
+// Delete loading states
+const deletingIds = ref<Set<number>>(new Set());
+
+// Update status dialog
+const showUpdateDialog = ref<boolean>(false);
+const selectedFeedbackForUpdate = ref<FeedbackResponse | null>(null);
+const updatingStatus = ref<'pending' | 'in_progress' | 'completed' | 'rejected' | null>(null);
+const developerResponseText = ref<string>('');
+const isUpdating = ref<boolean>(false);
+
+// Detail view
+const showDetailView = ref<boolean>(false);
+const selectedFeedbackForDetail = ref<FeedbackResponse | null>(null);
+
+// Current user info
+const currentUser = ref<UserResponse | null>(null);
+const userRole = ref<'user' | 'developer' | 'admin'>('user');
 
 // Computed
 const canSubmitFeedback = computed(() => submissionStatus.value?.can_submit ?? true);
 
+const isDeveloperOrAdmin = computed(() => 
+  userRole.value === 'developer' || userRole.value === 'admin'
+);
+
 const categoryOptions: { value: FeedbackCategoryEnum | null; label: string }[] = [
-  { value: null, label: 'All Categories' },
+  { value: null, label: t('feedback.categories.other').replace('Other', 'All Categories').replace('其他', '全部类别') },
   { value: 'bug', label: t('feedback.categories.bug') },
   { value: 'feature', label: t('feedback.categories.feature') },
   { value: 'ui', label: t('feedback.categories.ui') },
@@ -64,7 +91,7 @@ const categoryOptions: { value: FeedbackCategoryEnum | null; label: string }[] =
 ];
 
 const statusOptions: { value: typeof selectedStatus.value; label: string }[] = [
-  { value: null, label: 'All Statuses' },
+  { value: null, label: t('feedback.statuses.pending').replace('待处理', 'All Statuses').replace('Pending', 'All Statuses') },
   { value: 'pending', label: t('feedback.statuses.pending') },
   { value: 'in_progress', label: t('feedback.statuses.inProgress') },
   { value: 'completed', label: t('feedback.statuses.completed') },
@@ -72,6 +99,16 @@ const statusOptions: { value: typeof selectedStatus.value; label: string }[] = [
 ];
 
 // Methods
+async function fetchCurrentUser(): Promise<void> {
+  try {
+    currentUser.value = await userApi.getCurrentUser(props.token);
+    // Note: Backend should return role info, for now default to 'user'
+    // This can be extended when backend adds role support
+  } catch (error: unknown) {
+    console.error('Failed to fetch current user:', error);
+  }
+}
+
 async function fetchFeedbackList(): Promise<void> {
   isLoading.value = true;
   errorMessage.value = null;
@@ -137,16 +174,18 @@ async function submitFeedback(): Promise<void> {
     newFeedbackCategory.value = 'other';
     showSubmitForm.value = false;
 
+    // Show success message
+    successMessage.value = t('feedback.submitSuccess');
+    setTimeout(() => { successMessage.value = null; }, 3000);
+
     // Refresh list and status
     await Promise.all([
       fetchFeedbackList(),
       fetchSubmissionStatus()
     ]);
-
-    // Show success message via event or toast (can be enhanced)
   } catch (error: unknown) {
     console.error('Failed to submit feedback:', error);
-    errorMessage.value = error instanceof Error ? error.message : 'Failed to submit feedback';
+    errorMessage.value = error instanceof Error ? error.message : t('feedback.submitFailed');
   } finally {
     isSubmitting.value = false;
   }
@@ -155,21 +194,102 @@ async function submitFeedback(): Promise<void> {
 async function handleVote(feedbackId: number): Promise<void> {
   if (votingIds.value.has(feedbackId)) return;
 
+  const feedback = feedbackList.value.find(f => f.id === feedbackId);
+  
+  // Prevent voting on own feedback
+  if (feedback && feedback.author && currentUser.value && feedback.author.user_id === currentUser.value.user_id) {
+    errorMessage.value = t('feedback.cannotVoteOwn');
+    return;
+  }
+
   votingIds.value.add(feedbackId);
+  voteErrorIds.value.delete(feedbackId);
 
   try {
     const result = await feedbackApi.vote(props.token, feedbackId);
     // Update local state
-    const feedback = feedbackList.value.find(f => f.id === feedbackId);
-    if (feedback) {
-      feedback.has_voted = result.has_voted;
-      feedback.vote_count = result.vote_count;
+    const fb = feedbackList.value.find(f => f.id === feedbackId);
+    if (fb) {
+      fb.has_voted = result.has_voted;
+      fb.vote_count = result.vote_count;
     }
   } catch (error: unknown) {
     console.error('Failed to vote:', error);
+    errorMessage.value = error instanceof Error ? error.message : 'Failed to vote';
+    voteErrorIds.value.add(feedbackId);
   } finally {
     votingIds.value.delete(feedbackId);
+    setTimeout(() => voteErrorIds.value.delete(feedbackId), 3000);
   }
+}
+
+async function handleDelete(feedbackId: number): Promise<void> {
+  if (!confirm(t('feedback.deleteConfirm'))) return;
+
+  deletingIds.value.add(feedbackId);
+
+  try {
+    await feedbackApi.delete(props.token, feedbackId);
+    
+    // Show success message
+    successMessage.value = t('feedback.deleteSuccess');
+    setTimeout(() => { successMessage.value = null; }, 3000);
+
+    // Refresh list
+    await fetchFeedbackList();
+    await fetchStats();
+  } catch (error: unknown) {
+    console.error('Failed to delete feedback:', error);
+    errorMessage.value = error instanceof Error ? error.message : t('feedback.deleteFailed');
+  } finally {
+    deletingIds.value.delete(feedbackId);
+  }
+}
+
+function openUpdateDialog(feedback: FeedbackResponse): void {
+  selectedFeedbackForUpdate.value = feedback;
+  updatingStatus.value = feedback.status;
+  developerResponseText.value = feedback.developer_response || '';
+  showUpdateDialog.value = true;
+}
+
+async function handleUpdateFeedback(): Promise<void> {
+  if (!selectedFeedbackForUpdate.value) return;
+
+  isUpdating.value = true;
+
+  try {
+    const updateData: FeedbackUpdate = {
+      status: updatingStatus.value,
+      developer_response: developerResponseText.value.trim() || null
+    };
+
+    await feedbackApi.update(props.token, selectedFeedbackForUpdate.value.id, updateData);
+
+    // Show success message
+    successMessage.value = t('feedback.responseSuccess');
+    setTimeout(() => { successMessage.value = null; }, 3000);
+
+    // Close dialog and refresh list
+    showUpdateDialog.value = false;
+    selectedFeedbackForUpdate.value = null;
+    await fetchFeedbackList();
+  } catch (error: unknown) {
+    console.error('Failed to update feedback:', error);
+    errorMessage.value = error instanceof Error ? error.message : t('feedback.responseFailed');
+  } finally {
+    isUpdating.value = false;
+  }
+}
+
+function openDetailView(feedback: FeedbackResponse): void {
+  selectedFeedbackForDetail.value = feedback;
+  showDetailView.value = true;
+}
+
+function closeDetailView(): void {
+  showDetailView.value = false;
+  selectedFeedbackForDetail.value = null;
 }
 
 function handlePageChange(page: number): void {
@@ -180,6 +300,34 @@ function handlePageChange(page: number): void {
 function handleFilterChange(): void {
   currentPage.value = 1;
   fetchFeedbackList();
+}
+
+function toggleMyFeedbackFilter(): void {
+  showMyFeedbackOnly.value = !showMyFeedbackOnly.value;
+  currentPage.value = 1;
+  // When filtering by my feedback, we need to fetch from the submissions endpoint
+  if (showMyFeedbackOnly.value) {
+    fetchMyFeedback();
+  } else {
+    fetchFeedbackList();
+  }
+}
+
+async function fetchMyFeedback(): Promise<void> {
+  isLoading.value = true;
+  errorMessage.value = null;
+
+  try {
+    const response: FeedbackListResponse = await feedbackApi.getMyFeedback(props.token, currentPage.value, 20);
+    feedbackList.value = response.items;
+    totalPages.value = response.total_pages;
+    totalItems.value = response.total;
+  } catch (error: unknown) {
+    console.error('Failed to fetch my feedback:', error);
+    errorMessage.value = error instanceof Error ? error.message : 'Failed to load your feedback';
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 function formatDate(dateString: string): string {
@@ -193,12 +341,23 @@ function formatDate(dateString: string): string {
   });
 }
 
+function canDeleteFeedback(feedback: FeedbackResponse): boolean {
+  // Admin can delete any feedback
+  if (userRole.value === 'admin') return true;
+  // Author can delete if no votes
+  if (currentUser.value && feedback.user_id === currentUser.value.user_id) {
+    return feedback.vote_count === 0;
+  }
+  return false;
+}
+
 // Lifecycle
 onMounted(() => {
   Promise.all([
     fetchFeedbackList(),
     fetchStats(),
-    fetchSubmissionStatus()
+    fetchSubmissionStatus(),
+    fetchCurrentUser()
   ]);
 });
 </script>
@@ -210,6 +369,16 @@ onMounted(() => {
       <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ t('feedback.title') }}</h2>
       <p class="text-gray-600">{{ t('feedback.description') }}</p>
     </div>
+
+    <!-- Success Message -->
+    <el-alert
+      v-if="successMessage"
+      :title="successMessage"
+      type="success"
+      show-icon
+      class="mb-6"
+      @close="successMessage = null"
+    />
 
     <!-- Stats Cards -->
     <div v-if="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -245,7 +414,7 @@ onMounted(() => {
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold text-gray-900">
-          {{ showSubmitForm ? 'New Feedback' : t('feedback.submit') }}
+          {{ showSubmitForm ? t('feedback.submit') : t('feedback.submit') }}
         </h3>
         <el-button
           v-if="!showSubmitForm"
@@ -351,6 +520,15 @@ onMounted(() => {
             <el-option label="Newest First" value="created_at" />
           </el-select>
         </div>
+
+        <div class="flex items-end">
+          <el-button
+            :type="showMyFeedbackOnly ? 'primary' : 'default'"
+            @click="toggleMyFeedbackFilter"
+          >
+            {{ showMyFeedbackOnly ? t('feedback.allFeedback') : t('feedback.myFeedback') }}
+          </el-button>
+        </div>
       </div>
     </div>
 
@@ -367,17 +545,31 @@ onMounted(() => {
             <button
               @click="handleVote(feedback.id)"
               :disabled="votingIds.has(feedback.id)"
-              class="flex flex-col items-center justify-center w-12 h-12 rounded-lg border transition-colors"
+              class="flex flex-col items-center justify-center w-14 h-14 rounded-xl border-2 transition-all duration-200 hover:scale-105 active:scale-95"
               :class="feedback.has_voted
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-600'
-                : 'border-gray-200 hover:border-indigo-300 text-gray-600 hover:text-indigo-600'"
+                ? 'border-indigo-500 bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-md'
+                : voteErrorIds.has(feedback.id)
+                  ? 'border-red-300 bg-red-50 text-red-600'
+                  : 'border-gray-200 hover:border-indigo-400 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'"
+              :title="feedback.has_voted ? t('feedback.voted') : t('feedback.vote')"
             >
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 2L6 8h8l-4-6z" />
-                <path d="M10 18l4-6H6l4 6z" opacity="0.3" />
+              <svg 
+                class="w-6 h-6 transition-transform duration-200" 
+                :class="votingIds.has(feedback.id) ? 'animate-bounce' : ''"
+                :fill="feedback.has_voted ? 'currentColor' : 'none'" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
               </svg>
-              <span class="text-xs font-medium">{{ feedback.vote_count }}</span>
+              <span 
+                class="text-sm font-bold transition-all duration-200"
+                :class="votingIds.has(feedback.id) ? 'opacity-50' : ''"
+              >
+                {{ feedback.vote_count }}
+              </span>
             </button>
+            <span class="text-xs text-gray-500">{{ t('feedback.voteCount').split(':')[0] }}</span>
           </div>
 
           <!-- Content -->
@@ -399,7 +591,7 @@ onMounted(() => {
               <span class="text-xs text-gray-500">{{ formatDate(feedback.created_at) }}</span>
             </div>
 
-            <p class="text-gray-900 mb-3 whitespace-pre-wrap">{{ feedback.content }}</p>
+            <p class="text-gray-900 mb-3 whitespace-pre-wrap line-clamp-3">{{ feedback.content }}</p>
 
             <!-- Developer Response -->
             <div v-if="feedback.developer_response" class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -410,6 +602,32 @@ onMounted(() => {
                 <span class="text-sm font-medium text-indigo-600">{{ t('feedback.developerResponse') }}</span>
               </div>
               <p class="text-sm text-gray-700">{{ feedback.developer_response }}</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-2 mt-4">
+              <el-button size="small" @click="openDetailView(feedback)">
+                {{ t('feedback.viewDetails') }}
+              </el-button>
+              
+              <el-button
+                v-if="isDeveloperOrAdmin"
+                size="small"
+                type="primary"
+                @click="openUpdateDialog(feedback)"
+              >
+                {{ t('feedback.updateStatus') }}
+              </el-button>
+              
+              <el-button
+                v-if="canDeleteFeedback(feedback)"
+                size="small"
+                type="danger"
+                :loading="deletingIds.has(feedback.id)"
+                @click="handleDelete(feedback.id)"
+              >
+                {{ t('feedback.delete') }}
+              </el-button>
             </div>
           </div>
         </div>
@@ -440,6 +658,98 @@ onMounted(() => {
         @current-change="handlePageChange"
       />
     </div>
+
+    <!-- Update Status Dialog -->
+    <el-dialog
+      v-model="showUpdateDialog"
+      :title="t('feedback.updateStatus')"
+      width="500px"
+    >
+      <el-form label-position="top">
+        <el-form-item :label="t('feedback.status')">
+          <el-select v-model="updatingStatus" class="w-full">
+            <el-option
+              v-for="opt in statusOptions.filter(o => o.value !== null)"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item :label="t('feedback.developerResponse')">
+          <el-input
+            v-model="developerResponseText"
+            type="textarea"
+            :rows="4"
+            :placeholder="t('feedback.responsePlaceholder')"
+          />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="showUpdateDialog = false">
+          {{ t('common.cancel') }}
+        </el-button>
+        <el-button
+          type="primary"
+          @click="handleUpdateFeedback"
+          :loading="isUpdating"
+        >
+          {{ t('common.save') }}
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Detail View Dialog -->
+    <el-dialog
+      v-model="showDetailView"
+      :title="t('feedback.viewDetails')"
+      width="700px"
+    >
+      <div v-if="selectedFeedbackForDetail" class="space-y-4">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span
+            class="px-3 py-1 rounded-full text-sm font-medium"
+            :class="FEEDBACK_STATUS_COLORS[selectedFeedbackForDetail.status]"
+          >
+            {{ FEEDBACK_STATUS_LABELS[selectedFeedbackForDetail.status] }}
+          </span>
+          <span class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+            {{ FEEDBACK_CATEGORY_LABELS[selectedFeedbackForDetail.category] }}
+          </span>
+        </div>
+
+        <div class="flex items-center gap-4 text-sm text-gray-500">
+          <span>{{ t('feedback.author') }}: {{ selectedFeedbackForDetail.author?.name ?? 'Anonymous' }}</span>
+          <span>{{ t('feedback.createdAt') }}: {{ formatDate(selectedFeedbackForDetail.created_at) }}</span>
+          <span>{{ t('feedback.voteCount') }}: {{ selectedFeedbackForDetail.vote_count }}</span>
+        </div>
+
+        <div class="prose max-w-none">
+          <p class="whitespace-pre-wrap text-gray-900">{{ selectedFeedbackForDetail.content }}</p>
+        </div>
+
+        <div v-if="selectedFeedbackForDetail.developer_response" class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            <span class="text-sm font-medium text-indigo-600">{{ t('feedback.developerResponse') }}</span>
+          </div>
+          <p class="text-sm text-gray-700">{{ selectedFeedbackForDetail.developer_response }}</p>
+        </div>
+        <div v-else class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-500 text-sm">
+          {{ t('feedback.noDeveloperResponse') }}
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="closeDetailView">
+          {{ t('feedback.closeDetails') }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -455,5 +765,22 @@ onMounted(() => {
 
 :deep(.el-button--primary) {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+:deep(.el-dialog__header) {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>
