@@ -16,6 +16,7 @@ export default {
     upload: '上传题目',
     practice: '练习模式',
     mistakes: '错题本',
+    feedback: '意见反馈',
   },
 
   // Auth
@@ -225,5 +226,38 @@ export default {
     switch: '切换语言',
     english: 'English',
     chinese: '中文',
+  },
+
+  // Feedback / Comments
+  feedback: {
+    title: '意见反馈',
+    description: '分享您的想法、报告问题或提出改进建议',
+    submit: '提交反馈',
+    category: '类别',
+    content: '内容',
+    contentPlaceholder: '详细描述您的反馈...',
+    submitSuccess: '反馈提交成功！',
+    submitFailed: '提交反馈失败',
+    rateLimit: '每 24 小时可提交一次反馈',
+    vote: '支持',
+    voted: '已支持',
+    status: '状态',
+    developerResponse: '开发者回复',
+    noFeedback: '暂无反馈',
+    beFirst: '成为第一个分享想法的人！',
+    categories: {
+      bug: '问题报告',
+      feature: '功能建议',
+      ui: '界面体验',
+      performance: '性能问题',
+      documentation: '文档建议',
+      other: '其他',
+    },
+    statuses: {
+      pending: '待处理',
+      inProgress: '处理中',
+      completed: '已完成',
+      rejected: '已拒绝',
+    },
   },
 };

@@ -548,3 +548,213 @@ export const mistakeNotebookApi = {
     return response.json();
   }
 };
+
+// ==========================================
+// FEEDBACK / COMMENT API ENDPOINTS
+// ==========================================
+
+export const feedbackApi = {
+  /**
+   * List all feedback with filtering and pagination
+   * GET /api/feedback
+   *
+   * @param params - Query parameters for filtering and pagination
+   * @returns Promise with paginated feedback list
+   */
+  list: async (params: {
+    status_filter?: 'pending' | 'in_progress' | 'completed' | 'rejected' | null;
+    category?: 'bug' | 'feature' | 'ui' | 'performance' | 'documentation' | 'other' | null;
+    sort_by?: 'vote_count' | 'created_at';
+    page?: number;
+    page_size?: number;
+  } = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (params.status_filter !== undefined && params.status_filter !== null) {
+      queryParams.append('status_filter', params.status_filter);
+    }
+    if (params.category !== undefined && params.category !== null) {
+      queryParams.append('category', params.category);
+    }
+    if (params.sort_by !== undefined) {
+      queryParams.append('sort_by', params.sort_by);
+    }
+    if (params.page !== undefined) {
+      queryParams.append('page', params.page.toString());
+    }
+    if (params.page_size !== undefined) {
+      queryParams.append('page_size', params.page_size.toString());
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/feedback?${queryParams.toString()}`);
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Submit new feedback
+   * POST /api/feedback
+   *
+   * Rate limit: 1 submission per user every 24 hours
+   *
+   * @param token - JWT access token
+   * @param feedbackData - Feedback content and category
+   * @returns Promise with created feedback
+   */
+  create: async (token: string, feedbackData: { content: string; category?: 'bug' | 'feature' | 'ui' | 'performance' | 'documentation' | 'other' }) => {
+    const response = await fetch(`${API_BASE_URL}/api/feedback`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(feedbackData)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get feedback details by ID
+   * GET /api/feedback/{feedback_id}
+   *
+   * @param token - JWT access token
+   * @param feedbackId - Feedback ID
+   * @returns Promise with feedback details
+   */
+  getById: async (token: string, feedbackId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/feedback/${feedbackId}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Update feedback status and/or developer response
+   * PUT /api/feedback/{feedback_id}
+   *
+   * Requires developer/admin role
+   *
+   * @param token - JWT access token
+   * @param feedbackId - Feedback ID
+   * @param updateData - Update data (status, developer_response)
+   * @returns Promise with updated feedback
+   */
+  update: async (
+    token: string,
+    feedbackId: number,
+    updateData: { status?: 'pending' | 'in_progress' | 'completed' | 'rejected' | null; developer_response?: string | null }
+  ) => {
+    const response = await fetch(`${API_BASE_URL}/api/feedback/${feedbackId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(updateData)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Delete feedback
+   * DELETE /api/feedback/{feedback_id}
+   *
+   * Requires admin role or original author (if no votes)
+   *
+   * @param token - JWT access token
+   * @param feedbackId - Feedback ID
+   * @returns Promise that resolves on success
+   */
+  delete: async (token: string, feedbackId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/feedback/${feedbackId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return null;
+  },
+
+  /**
+   * Toggle vote for feedback
+   * POST /api/feedback/{feedback_id}/vote
+   *
+   * Requires authentication. Cannot vote on own feedback.
+   *
+   * @param token - JWT access token
+   * @param feedbackId - Feedback ID
+   * @returns Promise with vote status
+   */
+  vote: async (token: string, feedbackId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/feedback/${feedbackId}/vote`, {
+      method: 'POST',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get current user's vote status for a feedback
+   * GET /api/feedback/{feedback_id}/vote
+   *
+   * @param token - JWT access token
+   * @param feedbackId - Feedback ID
+   * @returns Promise with vote status
+   */
+  getVoteStatus: async (token: string, feedbackId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/feedback/${feedbackId}/vote`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get current user's feedback submissions
+   * GET /api/feedback/me/submissions
+   *
+   * @param token - JWT access token
+   * @param page - Page number
+   * @param pageSize - Items per page
+   * @returns Promise with paginated feedback list
+   */
+  getMyFeedback: async (token: string, page?: number, pageSize?: number) => {
+    const queryParams = new URLSearchParams();
+    if (page !== undefined) {
+      queryParams.append('page', page.toString());
+    }
+    if (pageSize !== undefined) {
+      queryParams.append('page_size', pageSize.toString());
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/feedback/me/submissions?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Check if current user can submit feedback today
+   * GET /api/feedback/me/submission-status
+   *
+   * @param token - JWT access token
+   * @returns Promise with submission status
+   */
+  getSubmissionStatus: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/feedback/me/submission-status`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get feedback statistics
+   * GET /api/feedback/stats
+   *
+   * @returns Promise with feedback statistics
+   */
+  getStats: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/feedback/stats`);
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  }
+};

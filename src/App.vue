@@ -13,11 +13,12 @@ import UploadQuestions from './components/UploadQuestions.vue';
 import MistakeNotebook from './components/MistakeNotebook.vue';
 import PracticeView from './components/PracticeView.vue';
 import LanguageSwitcher from './components/LanguageSwitcher.vue';
+import FeedbackView from './components/FeedbackView.vue';
 
 // Initialize i18n
 const { t } = useI18n();
 
-type DashboardMenu = 'profile' | 'questions' | 'upload' | 'practice' | 'mistakes';
+type DashboardMenu = 'profile' | 'questions' | 'upload' | 'practice' | 'mistakes' | 'feedback';
 
 // Global App State
 const token = ref<string | null>(localStorage.getItem('access_token'));
@@ -91,7 +92,8 @@ const menuItems = [
   { key: 'questions' as DashboardMenu, labelKey: 'nav.questions', icon: 'Files' },
   { key: 'upload' as DashboardMenu, labelKey: 'nav.upload', icon: 'Upload' },
   { key: 'practice' as DashboardMenu, labelKey: 'nav.practice', icon: 'Reading' },
-  { key: 'mistakes' as DashboardMenu, labelKey: 'nav.mistakes', icon: 'Document' }
+  { key: 'mistakes' as DashboardMenu, labelKey: 'nav.mistakes', icon: 'Document' },
+  { key: 'feedback' as DashboardMenu, labelKey: 'nav.feedback', icon: 'Chat' }
 ] as const;
 </script>
 
@@ -216,6 +218,9 @@ const menuItems = [
                 <svg v-else-if="item.key === 'mistakes'" class="w-5 h-5" style="color: #374151;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
+                <svg v-else-if="item.key === 'feedback'" class="w-5 h-5" style="color: #374151;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                </svg>
                 <span v-show="!isSidebarCollapsed" style="color: #374151;">{{ t(item.labelKey) }}</span>
               </span>
             </template>
@@ -267,6 +272,11 @@ const menuItems = [
 
           <MistakeNotebook
             v-else-if="activeMenu === 'mistakes'"
+            :token="token"
+          />
+
+          <FeedbackView
+            v-else-if="activeMenu === 'feedback'"
             :token="token"
           />
         </div>

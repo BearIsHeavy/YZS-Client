@@ -16,6 +16,7 @@ export default {
     upload: 'Upload Questions',
     practice: 'Practice',
     mistakes: 'Mistake Notebook',
+    feedback: 'Feedback',
   },
 
   // Auth
@@ -225,5 +226,38 @@ export default {
     switch: 'Switch Language',
     english: 'English',
     chinese: '中文',
+  },
+
+  // Feedback / Comments
+  feedback: {
+    title: 'Feedback',
+    description: 'Share your ideas, report bugs, or suggest improvements',
+    submit: 'Submit Feedback',
+    category: 'Category',
+    content: 'Content',
+    contentPlaceholder: 'Describe your feedback in detail...',
+    submitSuccess: 'Feedback submitted successfully!',
+    submitFailed: 'Failed to submit feedback',
+    rateLimit: 'You can submit feedback once every 24 hours',
+    vote: 'Vote',
+    voted: 'Voted',
+    status: 'Status',
+    developerResponse: 'Developer Response',
+    noFeedback: 'No feedback yet',
+    beFirst: 'Be the first to share your thoughts!',
+    categories: {
+      bug: 'Bug Report',
+      feature: 'Feature Request',
+      ui: 'UI/UX',
+      performance: 'Performance',
+      documentation: 'Documentation',
+      other: 'Other',
+    },
+    statuses: {
+      pending: 'Pending',
+      inProgress: 'In Progress',
+      completed: 'Completed',
+      rejected: 'Rejected',
+    },
   },
 };

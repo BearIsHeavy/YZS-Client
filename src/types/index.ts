@@ -274,3 +274,90 @@ export const QUESTION_TYPE_MAP: Record<QuestionTypeEnum, string> = {
   2: 'Multiple Choice',
   3: 'Fill in Blank'
 };
+
+// ==========================================
+// FEEDBACK / COMMENT TYPES (from schemas/feedback.py)
+// ==========================================
+
+export type FeedbackCategoryEnum = 'bug' | 'feature' | 'ui' | 'performance' | 'documentation' | 'other';
+export type FeedbackStatusEnum = 'pending' | 'in_progress' | 'completed' | 'rejected';
+
+export interface FeedbackCreate {
+  content: string;
+  category?: FeedbackCategoryEnum;
+}
+
+export interface FeedbackUpdate {
+  status?: FeedbackStatusEnum | null;
+  developer_response?: string | null;
+}
+
+export interface FeedbackUserResponse {
+  user_id: number;
+  name: string;
+}
+
+export interface FeedbackResponse {
+  id: number;
+  user_id: number;
+  content: string;
+  category: FeedbackCategoryEnum;
+  status: FeedbackStatusEnum;
+  vote_count: number;
+  developer_response: string | null;
+  responded_at: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  author?: FeedbackUserResponse | null;
+  has_voted: boolean;
+}
+
+export interface FeedbackListResponse {
+  items: FeedbackResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface FeedbackStats {
+  total_count: number;
+  by_status: Record<string, number>;
+  by_category: Record<string, number>;
+  top_voted: Record<string, unknown>[];
+}
+
+export interface FeedbackVoteResponse {
+  has_voted: boolean;
+  vote_count: number;
+}
+
+export interface FeedbackSubmissionStatus {
+  can_submit: boolean;
+  next_submission_at: string | null;
+  message: string;
+}
+
+export const FEEDBACK_CATEGORY_LABELS: Record<FeedbackCategoryEnum, string> = {
+  bug: 'Bug',
+  feature: 'Feature Request',
+  ui: 'UI/UX',
+  performance: 'Performance',
+  documentation: 'Documentation',
+  other: 'Other'
+};
+
+export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatusEnum, string> = {
+  pending: 'Pending',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+  rejected: 'Rejected'
+};
+
+export const FEEDBACK_STATUS_COLORS: Record<FeedbackStatusEnum, string> = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  in_progress: 'bg-blue-100 text-blue-800',
+  completed: 'bg-green-100 text-green-800',
+  rejected: 'bg-red-100 text-red-800'
+};
