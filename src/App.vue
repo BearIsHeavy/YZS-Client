@@ -14,11 +14,14 @@ import MistakeNotebook from './components/MistakeNotebook.vue';
 import PracticeView from './components/PracticeView.vue';
 import LanguageSwitcher from './components/LanguageSwitcher.vue';
 import FeedbackView from './components/FeedbackView.vue';
+import BlogView from './components/BlogView.vue';
+import BlogDetail from './components/BlogDetail.vue';
+import BlogEditor from './components/BlogEditor.vue';
 
 // Initialize i18n
 const { t } = useI18n();
 
-type DashboardMenu = 'profile' | 'questions' | 'upload' | 'practice' | 'mistakes' | 'feedback';
+type DashboardMenu = 'profile' | 'questions' | 'upload' | 'practice' | 'mistakes' | 'feedback' | 'blog';
 
 // Global App State
 const token = ref<string | null>(localStorage.getItem('access_token'));
@@ -27,6 +30,11 @@ const activeMenu = ref<DashboardMenu>('profile');
 const isAppLoading = ref<boolean>(false);
 const globalError = ref<string | null>(null);
 const isSidebarCollapsed = ref<boolean>(false);
+
+// Blog specific state
+const selectedBlogId = ref<number | null>(null);
+const editingBlogId = ref<number | null>(null);
+const isCreatingBlog = ref<boolean>(false);
 
 // ==========================================
 // SESSION MANAGEMENT
@@ -80,6 +88,38 @@ function handleUserUpdate(updatedUser: UserResponse): void {
   currentUser.value = updatedUser;
 }
 
+// ==========================================
+// BLOG NAVIGATION HANDLERS
+// ==========================================
+
+function handleViewBlog(blogId: number): void {
+  selectedBlogId.value = blogId;
+  editingBlogId.value = null;
+  isCreatingBlog.value = false;
+}
+
+function handleCreateBlog(): void {
+  selectedBlogId.value = null;
+  editingBlogId.value = null;
+  isCreatingBlog.value = true;
+}
+
+function handleEditBlog(blogId: number): void {
+  selectedBlogId.value = null;
+  editingBlogId.value = blogId;
+  isCreatingBlog.value = false;
+}
+
+function handleBlogBack(): void {
+  selectedBlogId.value = null;
+  editingBlogId.value = null;
+  isCreatingBlog.value = false;
+}
+
+function handleBlogSaved(): void {
+  handleBlogBack();
+}
+
 onMounted(() => {
   if (token.value) {
     fetchUserProfile();
@@ -93,6 +133,7 @@ const menuItems = [
   { key: 'upload' as DashboardMenu, labelKey: 'nav.upload', icon: 'Upload' },
   { key: 'practice' as DashboardMenu, labelKey: 'nav.practice', icon: 'Reading' },
   { key: 'mistakes' as DashboardMenu, labelKey: 'nav.mistakes', icon: 'Document' },
+  { key: 'blog' as DashboardMenu, labelKey: 'blog.title', icon: 'Document' },
   { key: 'feedback' as DashboardMenu, labelKey: 'nav.feedback', icon: 'Chat' }
 ] as const;
 </script>
@@ -218,6 +259,9 @@ const menuItems = [
                 <svg v-else-if="item.key === 'mistakes'" class="w-5 h-5" style="color: #374151;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
+                <svg v-else-if="item.key === 'blog'" class="w-5 h-5" style="color: #374151;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-9-3h10"></path>
+                </svg>
                 <svg v-else-if="item.key === 'feedback'" class="w-5 h-5" style="color: #374151;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                 </svg>
@@ -273,6 +317,30 @@ const menuItems = [
           <MistakeNotebook
             v-else-if="activeMenu === 'mistakes'"
             :token="token"
+          />
+
+          <BlogView
+            v-else-if="activeMenu === 'blog' && !selectedBlogId && !editingBlogId && !isCreatingBlog"
+            :token="token"
+            @view-blog="handleViewBlog"
+            @create-blog="handleCreateBlog"
+            @edit-blog="handleEditBlog"
+          />
+
+          <BlogDetail
+            v-else-if="activeMenu === 'blog' && selectedBlogId && !editingBlogId && !isCreatingBlog"
+            :token="token"
+            :blog-id="selectedBlogId"
+            @back="handleBlogBack"
+            @edit="handleEditBlog"
+          />
+
+          <BlogEditor
+            v-else-if="activeMenu === 'blog' && (isCreatingBlog || editingBlogId)"
+            :token="token"
+            :blog-id="editingBlogId"
+            @back="handleBlogBack"
+            @saved="handleBlogSaved"
           />
 
           <FeedbackView

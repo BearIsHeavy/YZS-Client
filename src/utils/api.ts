@@ -758,3 +758,314 @@ export const feedbackApi = {
     return response.json();
   }
 };
+
+// ==========================================
+// BLOG API ENDPOINTS
+// ==========================================
+
+export const blogApi = {
+  /**
+   * List all published blog posts with filtering and pagination
+   * GET /blogs
+   *
+   * @param token - JWT access token
+   * @param params - Query parameters for filtering and pagination
+   * @returns Promise with paginated blog list
+   */
+  list: async (token: string, params: {
+    search?: string | null;
+    user_id?: number | null;
+    content_type?: 'markdown' | 'html' | null;
+    sort_by?: 'created_at' | 'updated_at' | 'view_count' | 'like_count';
+    page?: number;
+    page_size?: number;
+  } = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (params.search !== undefined && params.search !== null) {
+      queryParams.append('search', params.search);
+    }
+    if (params.user_id !== undefined && params.user_id !== null) {
+      queryParams.append('user_id', params.user_id.toString());
+    }
+    if (params.content_type !== undefined && params.content_type !== null) {
+      queryParams.append('content_type', params.content_type);
+    }
+    if (params.sort_by !== undefined) {
+      queryParams.append('sort_by', params.sort_by);
+    }
+    if (params.page !== undefined) {
+      queryParams.append('page', params.page.toString());
+    }
+    if (params.page_size !== undefined) {
+      queryParams.append('page_size', params.page_size.toString());
+    }
+
+    const response = await fetch(`${API_BASE_URL}/blogs?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get current user's blog posts (including drafts)
+   * GET /blogs/my
+   *
+   * @param token - JWT access token
+   * @param page - Page number
+   * @param pageSize - Items per page
+   * @returns Promise with paginated blog list
+   */
+  getMyBlogs: async (token: string, page?: number, pageSize?: number) => {
+    const queryParams = new URLSearchParams();
+    if (page !== undefined) {
+      queryParams.append('page', page.toString());
+    }
+    if (pageSize !== undefined) {
+      queryParams.append('page_size', pageSize.toString());
+    }
+
+    const response = await fetch(`${API_BASE_URL}/blogs/my?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get blog post details by ID
+   * GET /blogs/{blog_id}
+   *
+   * @param token - JWT access token
+   * @param blogId - Blog post ID
+   * @returns Promise with blog details
+   */
+  getById: async (token: string, blogId: number) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/${blogId}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Create a new blog post
+   * POST /blogs
+   *
+   * @param token - JWT access token
+   * @param blogData - Blog post data
+   * @returns Promise with created blog
+   */
+  create: async (token: string, blogData: {
+    title: string;
+    content: string;
+    content_type?: 'markdown' | 'html';
+    is_published?: boolean;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/blogs`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(blogData)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Update a blog post
+   * PUT /blogs/{blog_id}
+   *
+   * Requires ownership
+   *
+   * @param token - JWT access token
+   * @param blogId - Blog post ID
+   * @param updateData - Update data
+   * @returns Promise with updated blog
+   */
+  update: async (
+    token: string,
+    blogId: number,
+    updateData: {
+      title?: string | null;
+      content?: string | null;
+      content_type?: 'markdown' | 'html' | null;
+      is_published?: boolean | null;
+    }
+  ) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/${blogId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(updateData)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Delete a blog post
+   * DELETE /blogs/{blog_id}
+   *
+   * Requires ownership
+   *
+   * @param token - JWT access token
+   * @param blogId - Blog post ID
+   * @returns Promise that resolves on success
+   */
+  delete: async (token: string, blogId: number) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/${blogId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return null;
+  },
+
+  /**
+   * Get blog statistics
+   * GET /blogs/stats
+   *
+   * @param token - JWT access token
+   * @returns Promise with blog statistics
+   */
+  getStats: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/stats`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Toggle like for a blog post
+   * POST /blogs/{blog_id}/like
+   *
+   * Cannot like own blog
+   *
+   * @param token - JWT access token
+   * @param blogId - Blog post ID
+   * @returns Promise with like status
+   */
+  toggleLike: async (token: string, blogId: number) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/${blogId}/like`, {
+      method: 'POST',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get current user's like status for a blog post
+   * GET /blogs/{blog_id}/like
+   *
+   * @param token - JWT access token
+   * @param blogId - Blog post ID
+   * @returns Promise with like status
+   */
+  getLikeStatus: async (token: string, blogId: number) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/${blogId}/like`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * List comments for a blog post
+   * GET /blogs/{blog_id}/comments
+   *
+   * @param token - JWT access token
+   * @param blogId - Blog post ID
+   * @param page - Page number
+   * @param pageSize - Items per page
+   * @returns Promise with paginated comments
+   */
+  listComments: async (token: string, blogId: number, page?: number, pageSize?: number) => {
+    const queryParams = new URLSearchParams();
+    if (page !== undefined) {
+      queryParams.append('page', page.toString());
+    }
+    if (pageSize !== undefined) {
+      queryParams.append('page_size', pageSize.toString());
+    }
+
+    const response = await fetch(`${API_BASE_URL}/blogs/${blogId}/comments?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Create a comment on a blog post
+   * POST /blogs/{blog_id}/comments
+   *
+   * @param token - JWT access token
+   * @param blogId - Blog post ID
+   * @param commentData - Comment data
+   * @returns Promise with created comment
+   */
+  createComment: async (
+    token: string,
+    blogId: number,
+    commentData: {
+      content: string;
+      parent_id?: number | null;
+    }
+  ) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/${blogId}/comments`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(commentData)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Update a comment
+   * PUT /blogs/comments/{comment_id}
+   *
+   * Requires ownership
+   *
+   * @param token - JWT access token
+   * @param commentId - Comment ID
+   * @param updateData - Update data
+   * @returns Promise with updated comment
+   */
+  updateComment: async (
+    token: string,
+    commentId: number,
+    updateData: {
+      content?: string | null;
+    }
+  ) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/comments/${commentId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(updateData)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Delete a comment (soft delete)
+   * DELETE /blogs/comments/{comment_id}
+   *
+   * Requires ownership or blog ownership
+   *
+   * @param token - JWT access token
+   * @param commentId - Comment ID
+   * @returns Promise that resolves on success
+   */
+  deleteComment: async (token: string, commentId: number) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return null;
+  }
+};

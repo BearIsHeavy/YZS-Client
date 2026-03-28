@@ -361,3 +361,111 @@ export const FEEDBACK_STATUS_COLORS: Record<FeedbackStatusEnum, string> = {
   completed: 'bg-green-100 text-green-800',
   rejected: 'bg-red-100 text-red-800'
 };
+
+// ==========================================
+// BLOG TYPES (from schemas/blog.py)
+// ==========================================
+
+export type ContentTypeEnum = 'markdown' | 'html';
+
+export interface BlogUserResponse {
+  user_id: number;
+  name: string;
+}
+
+export interface BlogCreate {
+  title: string;
+  content: string;
+  content_type?: ContentTypeEnum;
+  is_published?: boolean;
+}
+
+export interface BlogUpdate {
+  title?: string | null;
+  content?: string | null;
+  content_type?: ContentTypeEnum | null;
+  is_published?: boolean | null;
+}
+
+export interface BlogListItem {
+  blog_id: number;
+  user_id: number;
+  title: string;
+  content_type: string;
+  is_published: boolean;
+  view_count: number;
+  like_count: number;
+  comment_count: number;
+  created_at: string;
+  updated_at: string;
+  author?: BlogUserResponse | null;
+  has_liked: boolean;
+}
+
+export interface BlogResponse {
+  blog_id: number;
+  user_id: number;
+  title: string;
+  content: string;
+  content_type: string;
+  is_published: boolean;
+  view_count: number;
+  like_count: number;
+  comment_count: number;
+  created_at: string;
+  updated_at: string;
+  author?: BlogUserResponse | null;
+  has_liked: boolean;
+}
+
+export interface BlogListResponse {
+  items: BlogListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface BlogStats {
+  total_posts: number;
+  total_views: number;
+  total_likes: number;
+  total_comments: number;
+  my_posts?: number;
+  my_drafts?: number;
+}
+
+export interface BlogLikeResponse {
+  has_liked: boolean;
+  like_count: number;
+}
+
+// ==========================================
+// BLOG COMMENT TYPES
+// ==========================================
+
+export interface BlogCommentCreate {
+  content: string;
+  parent_id?: number | null;
+}
+
+export interface BlogCommentResponse {
+  comment_id: number;
+  blog_id: number;
+  user_id: number;
+  parent_id: number | null;
+  content: string;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  author?: BlogUserResponse | null;
+  replies: BlogCommentResponse[];
+}
+
+export interface BlogCommentListResponse {
+  items: BlogCommentResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
