@@ -469,3 +469,13 @@ export interface BlogCommentListResponse {
   page_size: number;
   total_pages: number;
 }
+
+// ==========================================
+// USER BIO TYPES (from schemas/user.py)
+// ==========================================
+
+export interface BioFileResponse {
+  file_path: string;
+  file_name: string;
+  uploaded_at: string;
+}

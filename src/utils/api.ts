@@ -1069,3 +1069,80 @@ export const blogApi = {
     return null;
   }
 };
+
+// ==========================================
+// USER BIO API ENDPOINTS
+// ==========================================
+
+export const bioApi = {
+  /**
+   * Get the current user's self-introduction markdown content
+   * GET /users/bio
+   *
+   * @param token - JWT access token
+   * @returns Promise with markdown content string
+   */
+  getBio: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/users/bio`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Upload a self-introduction markdown file
+   * POST /users/bio
+   *
+   * @param token - JWT access token
+   * @param file - Markdown file to upload
+   * @returns Promise with BioFileResponse
+   */
+  uploadBio: async (token: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/users/bio`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+        // Note: Content-Type is automatically set by browser for FormData with boundary
+      },
+      body: formData
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Delete the current user's self-introduction file
+   * DELETE /users/bio
+   *
+   * @param token - JWT access token
+   * @returns Promise that resolves on success
+   */
+  deleteBio: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/users/bio`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return null;
+  },
+
+  /**
+   * Get another user's self-introduction markdown content
+   * GET /users/bio/{user_id}
+   *
+   * @param token - JWT access token
+   * @param userId - User ID
+   * @returns Promise with markdown content string
+   */
+  getUserBio: async (token: string, userId: number) => {
+    const response = await fetch(`${API_BASE_URL}/users/bio/${userId}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  }
+};
