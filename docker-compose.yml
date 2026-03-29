@@ -1,0 +1,54 @@
+version: '3.8'
+
+# ==========================================
+# YanZhuShou Frontend - Docker Compose
+# ==========================================
+# Quick deployment configuration for production
+# ==========================================
+
+services:
+  # ------------------------------------------
+  # Frontend Service (Nginx)
+  # ------------------------------------------
+  yan-zhu-shou-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+    container_name: yan-zhu-shou-frontend
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-80}:80"
+    networks:
+      - yan-zhu-shou-network
+    volumes:
+      # Persist nginx logs
+      - nginx_logs:/var/log/nginx
+    environment:
+      - TZ=Asia/Shanghai
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    labels:
+      - "app.name=YanZhuShou Frontend"
+      - "app.version=1.0.0"
+      - "app.description=Question Bank Management System - Frontend"
+
+# ------------------------------------------
+# Networks
+# ------------------------------------------
+networks:
+  yan-zhu-shou-network:
+    driver: bridge
+    name: yan-zhu-shou-network
+
+# ------------------------------------------
+# Volumes
+# ------------------------------------------
+volumes:
+  nginx_logs:
+    name: yan-zhu-shou-nginx-logs
