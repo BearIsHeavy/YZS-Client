@@ -1172,11 +1172,16 @@ export const blogTagApi = {
    */
   list: async (token: string, search?: string) => {
     const queryParams = new URLSearchParams();
-    if (search !== undefined && search !== null) {
+    if (search !== undefined && search !== null && search.trim() !== '') {
       queryParams.append('search', search);
     }
 
-    const response = await fetch(`${API_BASE_URL}/blogs/tags?${queryParams.toString()}`, {
+    const queryString = queryParams.toString();
+    const url = queryString 
+      ? `${API_BASE_URL}/blogs/tags?${queryString}`
+      : `${API_BASE_URL}/blogs/tags`;
+
+    const response = await fetch(url, {
       headers: getAuthHeaders(token)
     });
     if (!response.ok) await handleApiError(response);

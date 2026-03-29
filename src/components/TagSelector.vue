@@ -53,10 +53,16 @@ async function fetchTags(): Promise<void> {
   isLoading.value = true;
   try {
     const response = await blogTagApi.list(props.token, searchQuery.value || undefined);
-    availableTags.value = response.items;
-    filteredTags.value = availableTags.value.filter(
-      tag => !selectedTags.value.includes(tag.name)
-    );
+    
+    // Ensure items is an array and has valid tag objects
+    const items = Array.isArray(response.items) ? response.items : [];
+    
+    availableTags.value = items;
+    
+    // Filter out tags that are already selected or have no name
+    filteredTags.value = items.filter((tag: BlogTagResponse) => {
+      return tag && tag.name && tag.name.trim() !== '' && !selectedTags.value.includes(tag.name);
+    });
   } catch (error: unknown) {
     console.error('Failed to fetch tags:', error);
   } finally {
@@ -191,14 +197,28 @@ onMounted(() => {
 
     <!-- Dropdown -->
     <div
-      v-if="showDropdown && newTagInput"
+      v-if="showDropdown"
       class="dropdown absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
     >
-      <!-- Search Results -->
-      <div v-if="filteredTags.length > 0" class="p-2">
-        <div class="text-xs text-gray-500 mb-2 px-2">Available Tags</div>
+      <!-- Search Results (show when typing) -->
+      <div v-if="newTagInput && filteredTags.length > 0" class="p-2">
+        <div class="text-xs text-gray-500 mb-2 px-2">Search Results ({{ filteredTags.length }})</div>
         <div
-          v-for="tag in filteredTags.slice(0, 10)"
+          v-for="tag in filteredTags"
+          :key="tag.tag_id"
+          class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+          @click="addTag(tag.name)"
+        >
+          <span>{{ tag.name }}</span>
+          <el-tag size="small" effect="plain">Tag</el-tag>
+        </div>
+      </div>
+
+      <!-- Show all available tags when focused but not typing -->
+      <div v-else-if="!newTagInput && availableTags.length > 0" class="p-2">
+        <div class="text-xs text-gray-500 mb-2 px-2">All Tags ({{ availableTags.length }})</div>
+        <div
+          v-for="tag in availableTags.filter(t => !selectedTags.includes(t.name))"
           :key="tag.tag_id"
           class="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
           @click="addTag(tag.name)"

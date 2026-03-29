@@ -409,16 +409,19 @@ onMounted(() => {
 
             <!-- Tags -->
             <div class="flex flex-wrap gap-2 mb-3">
-              <el-tag
-                v-for="tag in blog.tags || []"
-                :key="tag.tag_id"
-                size="small"
-                effect="plain"
-                class="cursor-pointer hover:bg-indigo-50"
-                @click.stop="selectTagFilter(tag.name)"
-              >
-                {{ tag.name }}
-              </el-tag>
+              <template v-if="blog.tags && blog.tags.length > 0">
+                <el-tag
+                  v-for="tagItem in blog.tags"
+                  :key="typeof tagItem === 'string' ? tagItem : tagItem.tag_id"
+                  size="small"
+                  effect="plain"
+                  class="cursor-pointer hover:bg-indigo-50"
+                  @click.stop="selectTagFilter(typeof tagItem === 'string' ? tagItem : tagItem.name)"
+                >
+                  {{ typeof tagItem === 'string' ? tagItem : (tagItem.name || 'Unnamed') }}
+                </el-tag>
+              </template>
+              <span v-else class="text-xs text-gray-400">No tags</span>
             </div>
 
             <div class="flex items-center gap-4 text-sm text-gray-500 mb-3">
