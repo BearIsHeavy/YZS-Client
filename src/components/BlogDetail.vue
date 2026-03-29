@@ -4,7 +4,8 @@ import { ref, onMounted, computed } from 'vue';
 import type {
   BlogResponse,
   BlogCommentResponse,
-  BlogCommentCreate
+  BlogCommentCreate,
+  BlogContentResponse
 } from '../types';
 import { blogApi } from '../utils/api';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -25,7 +26,9 @@ const emit = defineEmits<{
 
 // State
 const blog = ref<BlogResponse | null>(null);
+const blogContent = ref<string>('');
 const isLoading = ref<boolean>(false);
+const isLoadingContent = ref<boolean>(false);
 const comments = ref<BlogCommentResponse[]>([]);
 const isLoadingComments = ref<boolean>(false);
 
@@ -62,6 +65,22 @@ async function fetchBlog(): Promise<void> {
     ElMessage.error(error instanceof Error ? error.message : 'Failed to load blog post');
   } finally {
     isLoading.value = false;
+  }
+}
+
+async function fetchBlogContent(): Promise<void> {
+  isLoadingContent.value = true;
+  try {
+    const response: BlogContentResponse = await blogApi.getBlogContent(props.token, props.blogId);
+    blogContent.value = response.content;
+  } catch (error: unknown) {
+    console.error('Failed to load blog content:', error);
+    // Fallback: use content from blog if available
+    if (blog.value && 'content' in blog.value) {
+      blogContent.value = (blog.value as any).content || '';
+    }
+  } finally {
+    isLoadingContent.value = false;
   }
 }
 
@@ -190,6 +209,7 @@ function formatDate(dateString: string): string {
 onMounted(() => {
   Promise.all([
     fetchBlog(),
+    fetchBlogContent(),
     fetchComments()
   ]);
 });
@@ -276,14 +296,17 @@ onMounted(() => {
 
         <!-- Tags -->
         <div class="flex flex-wrap gap-2 mt-4">
-          <el-tag
-            v-for="tag in blog.tags || []"
-            :key="tag.tag_id"
-            size="small"
-            effect="plain"
-          >
-            {{ tag.name }}
-          </el-tag>
+          <template v-if="blog.tags && blog.tags.length > 0">
+            <el-tag
+              v-for="(tag, idx) in blog.tags"
+              :key="idx"
+              size="small"
+              effect="plain"
+            >
+              {{ typeof tag === 'string' ? tag : (tag.name || 'Unnamed') }}
+            </el-tag>
+          </template>
+          <el-tag v-else size="small" type="info">No tags</el-tag>
         </div>
       </div>
 
@@ -319,10 +342,15 @@ onMounted(() => {
 
       <!-- Content -->
       <div class="p-6">
+        <div v-if="isLoadingContent" class="flex justify-center py-8">
+          <el-skeleton :rows="10" animated />
+        </div>
         <MarkdownRenderer
-          :content="blog.content"
-          :content-type="blog.content_type as 'markdown' | 'html'"
+          v-else-if="blogContent"
+          :content="blogContent"
+          :content-type="blog?.content_type as 'markdown' | 'html'"
         />
+        <el-empty v-else description="No content available" />
       </div>
     </article>
 

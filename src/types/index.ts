@@ -486,6 +486,10 @@ export interface BioFileResponse {
 // BLOG TAG TYPES (from schemas/blog.py)
 // ==========================================
 
+export interface BlogContentResponse {
+  content: string;
+}
+
 export interface BlogTagResponse {
   tag_id: number;
   name: string;
