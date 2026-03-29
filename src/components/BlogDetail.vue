@@ -273,6 +273,18 @@ onMounted(() => {
             {{ blog.comment_count }} {{ t('blog.comments') }}
           </span>
         </div>
+
+        <!-- Tags -->
+        <div class="flex flex-wrap gap-2 mt-4">
+          <el-tag
+            v-for="tag in blog.tags || []"
+            :key="tag.tag_id"
+            size="small"
+            effect="plain"
+          >
+            {{ tag.name }}
+          </el-tag>
+        </div>
       </div>
 
       <!-- Actions Bar -->

@@ -400,6 +400,7 @@ export interface BlogListItem {
   updated_at: string;
   author?: BlogUserResponse | null;
   has_liked: boolean;
+  tags?: BlogTagResponse[];
 }
 
 export interface BlogResponse {
@@ -416,6 +417,7 @@ export interface BlogResponse {
   updated_at: string;
   author?: BlogUserResponse | null;
   has_liked: boolean;
+  tags?: BlogTagResponse[];
 }
 
 export interface BlogListResponse {
@@ -478,4 +480,18 @@ export interface BioFileResponse {
   file_path: string;
   file_name: string;
   uploaded_at: string;
+}
+
+// ==========================================
+// BLOG TAG TYPES (from schemas/blog.py)
+// ==========================================
+
+export interface BlogTagResponse {
+  tag_id: number;
+  name: string;
+}
+
+export interface BlogTagListResponse {
+  items: BlogTagResponse[];
+  total: number;
 }

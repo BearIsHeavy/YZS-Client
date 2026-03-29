@@ -776,6 +776,7 @@ export const blogApi = {
     search?: string | null;
     user_id?: number | null;
     content_type?: 'markdown' | 'html' | null;
+    tags?: string | null;  // Comma-separated tags
     sort_by?: 'created_at' | 'updated_at' | 'view_count' | 'like_count';
     page?: number;
     page_size?: number;
@@ -790,6 +791,9 @@ export const blogApi = {
     }
     if (params.content_type !== undefined && params.content_type !== null) {
       queryParams.append('content_type', params.content_type);
+    }
+    if (params.tags !== undefined && params.tags !== null) {
+      queryParams.append('tags', params.tags);
     }
     if (params.sort_by !== undefined) {
       queryParams.append('sort_by', params.sort_by);
@@ -850,23 +854,28 @@ export const blogApi = {
   },
 
   /**
-   * Create a new blog post
+   * Create a new blog post with file upload
    * POST /blogs
+   * Content-Type: multipart/form-data
+   *
+   * Required fields:
+   * - title: string (1-200 characters)
+   * - content_file: File (markdown or HTML, max 5MB)
+   *
+   * Optional fields:
+   * - content_type: 'markdown' | 'html' (default: 'markdown')
+   * - is_published: string 'true' | 'false' (default: 'true')
+   * - tags: string (comma-separated, max 5 tags, each max 10 chars)
    *
    * @param token - JWT access token
-   * @param blogData - Blog post data
+   * @param formData - Form data with title, content_file, content_type, is_published, tags
    * @returns Promise with created blog
    */
-  create: async (token: string, blogData: {
-    title: string;
-    content: string;
-    content_type?: 'markdown' | 'html';
-    is_published?: boolean;
-  }) => {
+  createWithFile: async (token: string, formData: FormData) => {
     const response = await fetch(`${API_BASE_URL}/blogs`, {
       method: 'POST',
-      headers: getAuthHeaders(token),
-      body: JSON.stringify(blogData)
+      headers: getUploadHeaders(token),
+      body: formData
     });
     if (!response.ok) await handleApiError(response);
     return response.json();
@@ -875,28 +884,29 @@ export const blogApi = {
   /**
    * Update a blog post
    * PUT /blogs/{blog_id}
+   * Content-Type: multipart/form-data
    *
-   * Requires ownership
+   * Optional fields (all):
+   * - title: string (1-200 characters)
+   * - content_file: File (markdown or HTML, max 5MB)
+   * - content_type: 'markdown' | 'html'
+   * - is_published: string 'true' | 'false'
+   * - tags: string (comma-separated, max 5 tags, each max 10 chars)
    *
    * @param token - JWT access token
    * @param blogId - Blog post ID
-   * @param updateData - Update data
+   * @param formData - Form data with title, content_file, content_type, is_published, tags
    * @returns Promise with updated blog
    */
   update: async (
     token: string,
     blogId: number,
-    updateData: {
-      title?: string | null;
-      content?: string | null;
-      content_type?: 'markdown' | 'html' | null;
-      is_published?: boolean | null;
-    }
+    formData: FormData
   ) => {
     const response = await fetch(`${API_BASE_URL}/blogs/${blogId}`, {
       method: 'PUT',
-      headers: getAuthHeaders(token),
-      body: JSON.stringify(updateData)
+      headers: getUploadHeaders(token),
+      body: formData
     });
     if (!response.ok) await handleApiError(response);
     return response.json();
@@ -1141,6 +1151,70 @@ export const bioApi = {
   getUserBio: async (token: string, userId: number) => {
     const response = await fetch(`${API_BASE_URL}/users/bio/${userId}`, {
       headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  }
+};
+
+// ==========================================
+// BLOG TAG API ENDPOINTS
+// ==========================================
+
+export const blogTagApi = {
+  /**
+   * List all available tags
+   * GET /blogs/tags
+   *
+   * @param token - JWT access token
+   * @param search - Optional search term to filter tags
+   * @returns Promise with tag list
+   */
+  list: async (token: string, search?: string) => {
+    const queryParams = new URLSearchParams();
+    if (search !== undefined && search !== null) {
+      queryParams.append('search', search);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/blogs/tags?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Create a new tag
+   * POST /blogs/tags
+   *
+   * @param token - JWT access token
+   * @param tagName - Tag name (max 10 characters)
+   * @returns Promise with created tag
+   */
+  create: async (token: string, tagName: string) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/tags`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ name: tagName })
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Update blog tags
+   * PUT /blogs/{blog_id}/tags
+   *
+   * @param token - JWT access token
+   * @param blogId - Blog post ID
+   * @param tags - Array of tag names
+   * @returns Promise with updated blog
+   */
+  updateBlogTags: async (token: string, blogId: number, tags: string[]) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/${blogId}/tags`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ tags })
     });
     if (!response.ok) await handleApiError(response);
     return response.json();

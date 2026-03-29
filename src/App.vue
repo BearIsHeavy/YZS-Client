@@ -129,11 +129,11 @@ onMounted(() => {
 // Menu items configuration (using i18n)
 const menuItems = [
   { key: 'profile' as DashboardMenu, labelKey: 'nav.profile', icon: 'User' },
+  { key: 'blog' as DashboardMenu, labelKey: 'blog.title', icon: 'Document' },
   { key: 'questions' as DashboardMenu, labelKey: 'nav.questions', icon: 'Files' },
   { key: 'upload' as DashboardMenu, labelKey: 'nav.upload', icon: 'Upload' },
   { key: 'practice' as DashboardMenu, labelKey: 'nav.practice', icon: 'Reading' },
   { key: 'mistakes' as DashboardMenu, labelKey: 'nav.mistakes', icon: 'Document' },
-  { key: 'blog' as DashboardMenu, labelKey: 'blog.title', icon: 'Document' },
   { key: 'feedback' as DashboardMenu, labelKey: 'nav.feedback', icon: 'Chat' }
 ] as const;
 </script>

@@ -6,9 +6,10 @@ import type {
   BlogStats,
   UserResponse
 } from '../types';
-import { blogApi, userApi } from '../utils/api';
+import { blogApi, userApi, blogTagApi } from '../utils/api';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useI18n } from '../i18n';
+import TagSelector from './TagSelector.vue';
 
 const { t } = useI18n();
 
@@ -40,6 +41,9 @@ const currentUser = ref<UserResponse | null>(null);
 const searchQuery = ref<string>('');
 const sortBy = ref<'created_at' | 'updated_at' | 'view_count' | 'like_count'>('created_at');
 const showMyBlogsOnly = ref<boolean>(false);
+const selectedTags = ref<string[]>([]);
+const availableTags = ref<{ tag_id: number; name: string }[]>([]);
+const isLoadingTags = ref<boolean>(false);
 
 // Like loading states
 const likingIds = ref<Set<number>>(new Set());
@@ -75,6 +79,7 @@ async function fetchBlogList(): Promise<void> {
       : await blogApi.list(props.token, {
           search: searchQuery.value || null,
           sort_by: sortBy.value,
+          tags: selectedTags.value.length > 0 ? selectedTags.value.join(',') : null,
           page: currentPage.value,
           page_size: 20
         });
@@ -152,6 +157,37 @@ function handleFilterChange(): void {
   fetchBlogList();
 }
 
+async function fetchTags(): Promise<void> {
+  isLoadingTags.value = true;
+  try {
+    const response = await blogTagApi.list(props.token);
+    availableTags.value = response.items;
+  } catch (error: unknown) {
+    console.error('Failed to fetch tags:', error);
+  } finally {
+    isLoadingTags.value = false;
+  }
+}
+
+function updateTags(tags: string[]): void {
+  selectedTags.value = tags;
+  fetchBlogList();
+}
+
+function selectTagFilter(tagName: string): void {
+  if (!selectedTags.value.includes(tagName)) {
+    selectedTags.value.push(tagName);
+    fetchBlogList();
+  }
+}
+
+function clearFilters(): void {
+  selectedTags.value = [];
+  searchQuery.value = '';
+  showMyBlogsOnly.value = false;
+  fetchBlogList();
+}
+
 function handlePageChange(page: number): void {
   currentPage.value = page;
   fetchBlogList();
@@ -180,7 +216,8 @@ onMounted(() => {
   Promise.all([
     fetchCurrentUser(),
     fetchStats(),
-    fetchBlogList()
+    fetchBlogList(),
+    fetchTags()
   ]);
 });
 </script>
@@ -223,43 +260,74 @@ onMounted(() => {
 
     <!-- Action Bar -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-      <div class="flex flex-wrap gap-4 items-center justify-between">
-        <div class="flex flex-wrap gap-3 flex-1">
-          <!-- Search -->
-          <div class="flex-1 min-w-[200px] max-w-md">
-            <el-input
-              v-model="searchQuery"
-              :placeholder="t('blog.search')"
-              clearable
-              @keyup.enter="handleFilterChange"
-            >
-              <template #prefix>
-                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-              </template>
-            </el-input>
-          </div>
-
-          <!-- Sort By -->
-          <el-select
-            v-model="sortBy"
-            :placeholder="t('blog.sortBy')"
-            class="w-40"
-            @change="handleFilterChange"
+      <!-- Row 1: Search and Tags -->
+      <div class="flex flex-wrap gap-4 items-center mb-4">
+        <!-- Search Input -->
+        <div class="flex-1 min-w-[200px]">
+          <el-input
+            v-model="searchQuery"
+            :placeholder="t('blog.search')"
+            clearable
+            @keyup.enter="handleFilterChange"
           >
-            <el-option :label="t('blog.sortByCreatedAt')" value="created_at" />
-            <el-option :label="t('blog.sortByUpdatedAt')" value="updated_at" />
-            <el-option :label="t('blog.sortByViewCount')" value="view_count" />
-            <el-option :label="t('blog.sortByLikeCount')" value="like_count" />
-          </el-select>
+            <template #prefix>
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </template>
+          </el-input>
+        </div>
 
+        <!-- Sort By -->
+        <el-select
+          v-model="sortBy"
+          :placeholder="t('blog.sortBy')"
+          class="w-40"
+          @change="handleFilterChange"
+        >
+          <el-option :label="t('blog.sortByCreatedAt')" value="created_at" />
+          <el-option :label="t('blog.sortByUpdatedAt')" value="updated_at" />
+          <el-option :label="t('blog.sortByViewCount')" value="view_count" />
+          <el-option :label="t('blog.sortByLikeCount')" value="like_count" />
+        </el-select>
+      </div>
+
+      <!-- Row 2: Tag Selector (full width) -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Filter by Tags (click or type)
+        </label>
+        <TagSelector
+          :token="token"
+          v-model="selectedTags"
+          :max-tags="5"
+          @update:model-value="updateTags"
+        />
+      </div>
+
+      <!-- Row 3: Filter Buttons and Create -->
+      <div class="flex items-center justify-between">
+        <div class="flex gap-2">
           <!-- My Posts Filter -->
           <el-button
             :type="showMyBlogsOnly ? 'primary' : 'default'"
             @click="toggleMyBlogsFilter"
           >
             {{ showMyBlogsOnly ? t('blog.allBlogs') : t('blog.myBlogs') }}
+          </el-button>
+
+          <!-- Clear Filters -->
+          <el-button
+            v-if="selectedTags.length > 0 || searchQuery"
+            text
+            @click="clearFilters"
+          >
+            <template #icon>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </template>
+            Clear Filters
           </el-button>
         </div>
 
@@ -338,6 +406,20 @@ onMounted(() => {
             >
               {{ blog.title }}
             </h3>
+
+            <!-- Tags -->
+            <div class="flex flex-wrap gap-2 mb-3">
+              <el-tag
+                v-for="tag in blog.tags || []"
+                :key="tag.tag_id"
+                size="small"
+                effect="plain"
+                class="cursor-pointer hover:bg-indigo-50"
+                @click.stop="selectTagFilter(tag.name)"
+              >
+                {{ tag.name }}
+              </el-tag>
+            </div>
 
             <div class="flex items-center gap-4 text-sm text-gray-500 mb-3">
               <span class="flex items-center gap-1">
