@@ -854,6 +854,22 @@ export const blogApi = {
   },
 
   /**
+   * Get blog post content as raw text
+   * GET /blogs/{blog_id}/content
+   *
+   * @param token - JWT access token
+   * @param blogId - Blog post ID
+   * @returns Promise with blog content
+   */
+  getBlogContent: async (token: string, blogId: number) => {
+    const response = await fetch(`${API_BASE_URL}/blogs/${blogId}/content`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
    * Create a new blog post with file upload
    * POST /blogs
    * Content-Type: multipart/form-data

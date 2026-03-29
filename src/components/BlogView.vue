@@ -84,6 +84,14 @@ async function fetchBlogList(): Promise<void> {
           page_size: 20
         });
 
+    console.log('Blog list response:', response);
+    console.log('First blog tags:', response.items[0]?.tags);
+    console.log('First blog tags type:', Array.isArray(response.items[0]?.tags) ? 'array' : typeof response.items[0]?.tags);
+    if (response.items[0]?.tags && response.items[0].tags.length > 0) {
+      console.log('First tag:', response.items[0].tags[0]);
+      console.log('First tag type:', typeof response.items[0].tags[0]);
+    }
+    
     blogList.value = response.items;
     totalPages.value = response.total_pages;
     totalItems.value = response.total;
@@ -411,8 +419,8 @@ onMounted(() => {
             <div class="flex flex-wrap gap-2 mb-3">
               <template v-if="blog.tags && blog.tags.length > 0">
                 <el-tag
-                  v-for="tagItem in blog.tags"
-                  :key="typeof tagItem === 'string' ? tagItem : tagItem.tag_id"
+                  v-for="(tagItem, idx) in blog.tags"
+                  :key="idx"
                   size="small"
                   effect="plain"
                   class="cursor-pointer hover:bg-indigo-50"
