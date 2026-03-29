@@ -40,7 +40,8 @@ const bioTemplate = ref<string>('');
 
 const genderLabel = computed(() => {
   const gender = GENDER_OPTIONS.find(g => g.value === props.user.gender);
-  return gender ? t(`auth.${gender.label.toLowerCase() as 'unknown' | 'male' | 'female'}`) : t('auth.genderUnknown');
+  // Directly use the label from GENDER_OPTIONS (Male, Female, Unknown)
+  return gender ? gender.label : 'Unknown';
 });
 
 const formatDate = (dateString: string) => {
