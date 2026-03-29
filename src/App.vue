@@ -254,9 +254,7 @@ const menuItems = [
             <el-icon :size="20" style="color: #374151;">
               <component :is="item.icon" />
             </el-icon>
-            <template #title>
-              <span style="color: #374151;">{{ t(item.labelKey) }}</span>
-            </template>
+            <span style="color: #374151;">{{ t(item.labelKey) }}</span>
           </el-menu-item>
         </el-menu>
 
@@ -356,14 +354,16 @@ const menuItems = [
   background-color: #f3f4f6;
 }
 
+/* Remove black border and background from active state */
 :deep(.el-menu-item.is-active) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white !important;
+  background-color: transparent !important;
+  border-left: none !important;
+  box-shadow: none !important;
 }
 
 :deep(.el-menu-item.is-active .el-icon),
 :deep(.el-menu-item.is-active span) {
-  color: white !important;
+  color: #374151;
 }
 
 /* Custom scrollbar */
