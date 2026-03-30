@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import type { SchoolInfoResponse, SchoolInfoListParams } from '../types';
-import { schoolApi } from '../utils/api';
+import { schoolApi, API_BASE_URL } from '../utils/api';
 import { useI18n } from '../i18n';
 
 const { t } = useI18n();
@@ -51,6 +51,20 @@ const searchInputs = ref({
   major_name: ''
 });
 
+// Curl Runner State
+const showCurlDialog = ref(false);
+const curlCommand = ref('');
+const curlResult = ref<unknown | null>(null);
+const curlError = ref<string | null>(null);
+const isCurlLoading = ref(false);
+
+// Curl templates
+const curlTemplates = {
+  fetch: `curl -X POST "${API_BASE_URL}/school-info/fetch" -H "Authorization: Bearer YOUR_TOKEN" -H "Content-Type: application/json" -d '{"source": "chsi"}'`,
+  list: `curl -X GET "${API_BASE_URL}/school-info/schools?page=1&page_size=20" -H "Authorization: Bearer YOUR_TOKEN"`,
+  update: `curl -X PUT "${API_BASE_URL}/school-info/schools/SCHOOL_ID/progress" -H "Authorization: Bearer YOUR_TOKEN" -H "Content-Type: application/json" -d '{"cutoff_score": "600"}'`
+};
+
 // ==========================================
 // DATA FETCHING
 // ==========================================
@@ -72,7 +86,9 @@ async function fetchCities(): Promise<void> {
 async function fetchSchools(): Promise<void> {
   isSchoolsLoading.value = true;
   try {
-    const data = await schoolApi.getSchools(props.token, filters.value.city);
+    const data = await schoolApi.getSchools(props.token, {
+      city: filters.value.city
+    });
     schools.value = data.schools || [];
     
     // Clear school selection if not in the new list
@@ -90,7 +106,10 @@ async function fetchSchools(): Promise<void> {
 async function fetchMajors(): Promise<void> {
   isMajorsLoading.value = true;
   try {
-    const data = await schoolApi.getMajors(props.token, filters.value.school_name);
+    const data = await schoolApi.getMajors(props.token, {
+      city: filters.value.city,
+      school_name: filters.value.school_name
+    });
     majors.value = data.majors || [];
     
     // Clear major selection if not in the new list
@@ -191,41 +210,158 @@ function handleViewSchool(school: SchoolInfoResponse): void {
 }
 
 // ==========================================
+// CURL RUNNER FUNCTIONS
+// ==========================================
+
+function openCurlDialog(): void {
+  showCurlDialog.value = true;
+  curlCommand.value = '';
+  curlResult.value = null;
+  curlError.value = null;
+}
+
+function closeCurlDialog(): void {
+  showCurlDialog.value = false;
+  curlCommand.value = '';
+  curlResult.value = null;
+  curlError.value = null;
+}
+
+function parseCurlCommand(curl: string): { method: string; url: string; headers: Record<string, string>; body?: unknown } {
+  const normalized = curl.replace(/\\\n/g, ' ').replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim();
+  
+  const methodMatch = normalized.match(/-X\s+(\w+)/);
+  const method = methodMatch?.[1] ?? 'GET';
+  
+  const urlMatch = normalized.match(/["']?(https?:\/\/[^"'\s]+)["']?/);
+  let url = urlMatch?.[1] ?? '';
+  
+  if (url.includes('localhost:8000')) {
+    url = url.replace('localhost:8000', API_BASE_URL);
+  }
+  
+  const headers: Record<string, string> = {};
+  const headerRegex = /-H\s+["']([^"']+):([^"']+)["']/g;
+  let headerMatch: RegExpExecArray | null;
+  while ((headerMatch = headerRegex.exec(normalized)) !== null) {
+    const key = headerMatch[1]?.trim();
+    const value = headerMatch[2]?.trim();
+    if (key && value) {
+      headers[key] = value;
+    }
+  }
+  
+  let body: unknown;
+  const bodyMatch = normalized.match(/-d\s+["'](.+)["']/);
+  if (bodyMatch && bodyMatch[1]) {
+    try {
+      body = JSON.parse(bodyMatch[1]);
+    } catch {
+      body = bodyMatch[1];
+    }
+  }
+  
+  return { method, url, headers, body };
+}
+
+async function executeFetchCurl(): Promise<void> {
+  if (!curlCommand.value.trim()) {
+    curlError.value = t('curl.error.empty');
+    return;
+  }
+  
+  isCurlLoading.value = true;
+  curlError.value = null;
+  curlResult.value = null;
+  
+  try {
+    const parsed = parseCurlCommand(curlCommand.value);
+    
+    if (!parsed.url) {
+      curlError.value = t('curl.error.invalidUrl');
+      isCurlLoading.value = false;
+      return;
+    }
+    
+    const headers: Record<string, string> = {};
+    for (const [key, value] of Object.entries(parsed.headers)) {
+      if (key === 'Authorization' && value.includes('YOUR_TOKEN')) {
+        headers[key] = `Bearer ${props.token}`;
+      } else {
+        headers[key] = value;
+      }
+    }
+    
+    if (!headers['Authorization']) {
+      headers['Authorization'] = `Bearer ${props.token}`;
+    }
+    
+    const fetchOptions: RequestInit = {
+      method: parsed.method,
+      headers
+    };
+    
+    if (parsed.body !== undefined && parsed.method !== 'GET' && parsed.method !== 'HEAD') {
+      if (typeof parsed.body === 'object') {
+        fetchOptions.body = JSON.stringify(parsed.body);
+      } else {
+        fetchOptions.body = String(parsed.body);
+      }
+    }
+    
+    const response = await fetch(parsed.url, fetchOptions);
+    
+    if (response.status === 204) {
+      curlResult.value = { success: true, message: t('curl.success.noContent') };
+    } else {
+      try {
+        curlResult.value = await response.json();
+      } catch {
+        curlResult.value = await response.text();
+      }
+    }
+    
+    if (!response.ok) {
+      curlError.value = typeof curlResult.value === 'object'
+        ? JSON.stringify(curlResult.value, null, 2)
+        : String(curlResult.value);
+    }
+  } catch (err: unknown) {
+    curlError.value = err instanceof Error ? err.message : t('curl.error.unknown');
+    console.error('Curl execution failed:', err);
+  } finally {
+    isCurlLoading.value = false;
+  }
+}
+
+function useTemplate(template: string): void {
+  curlCommand.value = template;
+}
+
+// ==========================================
 // LIFECYCLE
 // ==========================================
 
 onMounted(() => {
   fetchCities();
+  fetchSchools();
+  fetchMajors();
   fetchSchoolList();
 });
 
-// Watch for filter changes - cascade loading
+// Watch for filter changes - reload options when city changes
 watch(
   () => filters.value.city,
   (newCity, oldCity) => {
-    if (newCity !== oldCity) {
+    if (newCity !== oldCity && newCity) {
+      // Reload schools and majors when city changes
       fetchSchools();
-      // Reset dependent filters
-      filters.value.school_name = null;
-      filters.value.major_name = null;
-      searchInputs.value.school_name = '';
-      searchInputs.value.major_name = '';
-    }
-  }
-);
-
-watch(
-  () => filters.value.school_name,
-  (newSchool, oldSchool) => {
-    if (newSchool !== oldSchool) {
       fetchMajors();
-      // Reset dependent filter
-      filters.value.major_name = null;
-      searchInputs.value.major_name = '';
     }
   }
 );
 
+// Reload school list when filters change
 watch(filters, () => {
   page.value = 1;
   fetchSchoolList();
@@ -244,9 +380,24 @@ function getSortIcon(sortBy: string): string {
 <template>
   <div class="h-full flex flex-col">
     <!-- Header -->
-    <div class="mb-6">
-      <h2 class="text-2xl font-bold text-gray-800">{{ t('school.title') }}</h2>
-      <p class="text-sm text-gray-500 mt-1">{{ t('school.description') }}</p>
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">{{ t('school.title') }}</h2>
+        <p class="text-sm text-gray-500 mt-1">{{ t('school.description') }}</p>
+      </div>
+      <el-button
+        type="primary"
+        size="default"
+        @click="openCurlDialog"
+        class="bg-indigo-600 hover:bg-indigo-700"
+      >
+        <template #icon>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </template>
+        {{ t('curl.customFetch') }}
+      </el-button>
     </div>
 
     <!-- Filters -->
@@ -282,7 +433,7 @@ function getSortIcon(sortBy: string): string {
             size="default"
             clearable
             :loading="isSchoolsLoading"
-            :disabled="!filters.city"
+            @focus="fetchSchools"
           >
             <el-option
               v-for="school in schools"
@@ -315,7 +466,7 @@ function getSortIcon(sortBy: string): string {
             size="default"
             clearable
             :loading="isMajorsLoading"
-            :disabled="!filters.school_name"
+            @focus="fetchMajors"
           >
             <el-option
               v-for="major in majors"
@@ -467,7 +618,7 @@ function getSortIcon(sortBy: string): string {
       <!-- Pagination -->
       <div class="border-t border-gray-200 px-4 py-3 flex items-center justify-between bg-gray-50">
         <div class="text-sm text-gray-600">
-          {{ t('pagination.total', { total }) }}
+          {{ t('pagination.total').replace('{total}', total.toString()) }}
         </div>
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
@@ -489,6 +640,98 @@ function getSortIcon(sortBy: string): string {
         </div>
       </div>
     </div>
+
+    <!-- Curl Runner Dialog -->
+    <el-dialog
+      v-model="showCurlDialog"
+      :title="t('curl.title')"
+      width="800px"
+      :close-on-click-modal="false"
+    >
+      <!-- Quick Templates -->
+      <div class="mb-4">
+        <h4 class="text-sm font-semibold text-gray-700 mb-2">{{ t('curl.quickTemplates') }}</h4>
+        <div class="flex flex-wrap gap-2">
+          <el-button size="small" @click="useTemplate(curlTemplates.fetch)">
+            🔄 {{ t('curl.endpoints.fetchData') }}
+          </el-button>
+          <el-button size="small" @click="useTemplate(curlTemplates.list)">
+            📚 {{ t('curl.endpoints.schoolList') }}
+          </el-button>
+          <el-button size="small" @click="useTemplate(curlTemplates.update)">
+            ✏️ {{ t('curl.endpoints.schoolUpdate') }}
+          </el-button>
+        </div>
+      </div>
+
+      <!-- Curl Input -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          {{ t('curl.curlCommand') }}
+        </label>
+        <el-input
+          v-model="curlCommand"
+          :placeholder="t('curl.placeholder')"
+          type="textarea"
+          :rows="6"
+          class="font-mono text-sm"
+        />
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-3 mb-4">
+        <el-button
+          type="primary"
+          @click="executeFetchCurl"
+          :loading="isCurlLoading"
+          class="flex-1"
+        >
+          {{ t('curl.execute') }}
+        </el-button>
+        <el-button @click="curlCommand = ''; curlResult = null; curlError = null">
+          {{ t('common.clear') }}
+        </el-button>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="isCurlLoading" class="text-center py-4">
+        <div class="w-6 h-6 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+        <p class="text-gray-500 text-sm">{{ t('common.loading') }}</p>
+      </div>
+
+      <!-- Error Result -->
+      <div v-if="curlError && !curlResult" class="mb-4">
+        <el-alert
+          :title="t('common.error')"
+          type="error"
+          show-icon
+          class="mb-2"
+          @close="curlError = null"
+        />
+        <pre class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800 overflow-auto max-h-48">{{ curlError }}</pre>
+      </div>
+
+      <!-- Success Result -->
+      <div v-if="curlResult" class="mb-4">
+        <el-alert
+          :title="curlError ? t('common.error') : t('common.success')"
+          :type="curlError ? 'error' : 'success'"
+          show-icon
+          class="mb-2"
+          @close="curlResult = null"
+        />
+        <pre
+          :class="curlError ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'"
+          class="border rounded-lg p-3 text-sm overflow-auto max-h-64"
+        >{{ typeof curlResult === 'string' ? curlResult : JSON.stringify(curlResult, null, 2) }}</pre>
+      </div>
+
+      <template #footer>
+        <el-button @click="closeCurlDialog">
+          {{ t('common.close') }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 

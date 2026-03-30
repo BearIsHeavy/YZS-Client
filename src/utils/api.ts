@@ -1364,13 +1364,26 @@ export const schoolApi = {
    * GET /school-info/filters/schools
    *
    * @param token - JWT access token
-   * @param city - Optional city filter
+   * @param params - Optional filter parameters
    * @returns Promise with list of school names
    */
-  getSchools: async (token: string, city?: string | null) => {
+  getSchools: async (
+    token: string,
+    params: {
+      city?: string | null;
+      college_name?: string | null;
+      major_name?: string | null;
+    } = {}
+  ) => {
     const queryParams = new URLSearchParams();
-    if (city !== undefined && city !== null && city.trim() !== '') {
-      queryParams.append('city', city);
+    if (params.city !== undefined && params.city !== null && params.city.trim() !== '') {
+      queryParams.append('city', params.city);
+    }
+    if (params.college_name !== undefined && params.college_name !== null && params.college_name.trim() !== '') {
+      queryParams.append('college_name', params.college_name);
+    }
+    if (params.major_name !== undefined && params.major_name !== null && params.major_name.trim() !== '') {
+      queryParams.append('major_name', params.major_name);
     }
 
     const queryString = queryParams.toString();
@@ -1390,13 +1403,26 @@ export const schoolApi = {
    * GET /school-info/filters/majors
    *
    * @param token - JWT access token
-   * @param schoolName - Optional school name filter
+   * @param params - Optional filter parameters
    * @returns Promise with list of major names
    */
-  getMajors: async (token: string, schoolName?: string | null) => {
+  getMajors: async (
+    token: string,
+    params: {
+      city?: string | null;
+      school_name?: string | null;
+      college_name?: string | null;
+    } = {}
+  ) => {
     const queryParams = new URLSearchParams();
-    if (schoolName !== undefined && schoolName !== null && schoolName.trim() !== '') {
-      queryParams.append('school_name', schoolName);
+    if (params.city !== undefined && params.city !== null && params.city.trim() !== '') {
+      queryParams.append('city', params.city);
+    }
+    if (params.school_name !== undefined && params.school_name !== null && params.school_name.trim() !== '') {
+      queryParams.append('school_name', params.school_name);
+    }
+    if (params.college_name !== undefined && params.college_name !== null && params.college_name.trim() !== '') {
+      queryParams.append('college_name', params.college_name);
     }
 
     const queryString = queryParams.toString();

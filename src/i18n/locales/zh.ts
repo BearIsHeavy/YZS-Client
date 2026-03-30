@@ -201,6 +201,16 @@ export default {
     yes: '是',
     no: '否',
     ok: '确定',
+    actions: '操作',
+    view: '查看',
+    back: '返回',
+    reset: '重置',
+  },
+
+  // Pagination
+  pagination: {
+    total: '共 {total} 条',
+    pageSize: '每页数量',
   },
 
   // Messages
@@ -449,6 +459,48 @@ export default {
       supervisorName: '负责人姓名',
       supervisorContact: '负责人联系方式',
       remarks: '备注',
+    },
+  },
+
+  // Curl Runner
+  curl: {
+    title: 'API Curl 执行器',
+    description: '通过粘贴 curl 命令执行后端 API 请求',
+    quickTemplates: '快捷模板',
+    curlCommand: 'Curl 命令',
+    placeholder: '在此粘贴 curl 命令，例如：curl -X GET "http://localhost:8000/school-info/schools" -H "Authorization: Bearer YOUR_TOKEN"',
+    execute: '执行',
+    requestHistory: '请求历史',
+    apiReference: 'API 参考',
+    apiReferenceDescription: '常用端点：',
+    endpoints: {
+      schoolList: '获取学校列表',
+      schoolUpdate: '更新学校进度',
+      fetchData: '从学信网获取数据',
+      mistakes: '获取错题本',
+      createBlog: '创建博客文章',
+    },
+    templates: {
+      schoolList: '📚 学校列表',
+      schoolUpdate: '✏️ 更新学校',
+      fetchSchoolData: '🔄 获取数据',
+      createBlog: '📝 创建博客',
+      mistakeNotebook: '📖 错题本',
+    },
+    success: {
+      noContent: '请求成功完成（无内容）',
+    },
+    error: {
+      empty: '请输入 curl 命令',
+      fileUpload: '不支持文件上传。路径：{path}',
+      unknown: '发生未知错误',
+      invalidUrl: 'curl 命令中的 URL 无效',
+    },
+    history: {
+      time: '时间',
+      method: '方法',
+      url: '网址',
+      status: '状态',
     },
   },
 };

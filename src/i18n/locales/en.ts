@@ -201,6 +201,16 @@ export default {
     yes: 'Yes',
     no: 'No',
     ok: 'OK',
+    actions: 'Actions',
+    view: 'View',
+    back: 'Back',
+    reset: 'Reset',
+  },
+
+  // Pagination
+  pagination: {
+    total: 'Total: {total}',
+    pageSize: 'Page Size',
   },
 
   // Messages
@@ -449,6 +459,48 @@ export default {
       supervisorName: 'Supervisor Name',
       supervisorContact: 'Supervisor Contact',
       remarks: 'Remarks',
+    },
+  },
+
+  // Curl Runner
+  curl: {
+    title: 'API Curl Runner',
+    description: 'Execute backend API requests by pasting curl commands',
+    quickTemplates: 'Quick Templates',
+    curlCommand: 'Curl Command',
+    placeholder: 'Paste your curl command here, e.g., curl -X GET "http://localhost:8000/school-info/schools" -H "Authorization: Bearer YOUR_TOKEN"',
+    execute: 'Execute',
+    requestHistory: 'Request History',
+    apiReference: 'API Reference',
+    apiReferenceDescription: 'Common endpoints you can use:',
+    endpoints: {
+      schoolList: 'List schools',
+      schoolUpdate: 'Update school progress',
+      fetchData: 'Fetch school data from CHSI',
+      mistakes: 'Get mistake notebook',
+      createBlog: 'Create blog post',
+    },
+    templates: {
+      schoolList: '📚 School List',
+      schoolUpdate: '✏️ Update School',
+      fetchSchoolData: '🔄 Fetch Data',
+      createBlog: '📝 Create Blog',
+      mistakeNotebook: '📖 Mistake Notebook',
+    },
+    success: {
+      noContent: 'Request completed successfully (no content)',
+    },
+    error: {
+      empty: 'Please enter a curl command',
+      fileUpload: 'File uploads are not supported in this tool. Path: {path}',
+      unknown: 'Unknown error occurred',
+      invalidUrl: 'Invalid URL in curl command',
+    },
+    history: {
+      time: 'Time',
+      method: 'Method',
+      url: 'URL',
+      status: 'Status',
     },
   },
 };

@@ -18,7 +18,6 @@ import BlogView from './components/BlogView.vue';
 import BlogDetail from './components/BlogDetail.vue';
 import BlogEditor from './components/BlogEditor.vue';
 import SchoolView from './components/SchoolView.vue';
-import SchoolDetail from './components/SchoolDetail.vue';
 
 // Import Element Plus icons
 import {
@@ -48,9 +47,6 @@ const isSidebarCollapsed = ref<boolean>(false);
 const selectedBlogId = ref<number | null>(null);
 const editingBlogId = ref<number | null>(null);
 const isCreatingBlog = ref<boolean>(false);
-
-// School specific state
-const selectedSchoolId = ref<string | null>(null);
 
 // ==========================================
 // SESSION MANAGEMENT
@@ -134,18 +130,6 @@ function handleBlogBack(): void {
 
 function handleBlogSaved(): void {
   handleBlogBack();
-}
-
-// ==========================================
-// SCHOOL NAVIGATION HANDLERS
-// ==========================================
-
-function handleViewSchool(schoolId: string): void {
-  selectedSchoolId.value = schoolId;
-}
-
-function handleSchoolBack(): void {
-  selectedSchoolId.value = null;
 }
 
 onMounted(() => {
@@ -355,16 +339,9 @@ const menuItems = [
           />
 
           <SchoolView
-            v-else-if="activeMenu === 'school' && !selectedSchoolId"
+            v-else-if="activeMenu === 'school'"
             :token="token"
-            @view-school="handleViewSchool"
-          />
-
-          <SchoolDetail
-            v-else-if="activeMenu === 'school' && selectedSchoolId"
-            :token="token"
-            :school-id="selectedSchoolId"
-            @back="handleSchoolBack"
+            @view-school="() => {}"
           />
         </div>
       </main>
