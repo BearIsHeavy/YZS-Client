@@ -36,6 +36,14 @@ const filters = ref<SchoolInfoListParams>({
   order: 'asc'
 });
 
+// Search input state (for text input)
+const searchInputs = ref({
+  city: '',
+  school_name: '',
+  college_name: '',
+  major_name: ''
+});
+
 // Cities for dropdown
 const cities = ref<string[]>([]);
 const schools = ref<string[]>([]);
@@ -44,12 +52,9 @@ const isCitiesLoading = ref(false);
 const isSchoolsLoading = ref(false);
 const isMajorsLoading = ref(false);
 
-// Search input temporary state
-const searchInputs = ref({
-  school_name: '',
-  college_name: '',
-  major_name: ''
-});
+// Filtered dropdown options (based on search input)
+const filteredSchools = ref<string[]>([]);
+const filteredMajors = ref<string[]>([]);
 
 // Curl Runner State
 const showCurlDialog = ref(false);
@@ -90,6 +95,7 @@ async function fetchSchools(): Promise<void> {
       city: filters.value.city
     });
     schools.value = data.schools || [];
+    filteredSchools.value = schools.value;
     
     // Clear school selection if not in the new list
     if (filters.value.school_name && !schools.value.includes(filters.value.school_name)) {
@@ -111,6 +117,7 @@ async function fetchMajors(): Promise<void> {
       school_name: filters.value.school_name
     });
     majors.value = data.majors || [];
+    filteredMajors.value = majors.value;
     
     // Clear major selection if not in the new list
     if (filters.value.major_name && !majors.value.includes(filters.value.major_name)) {
@@ -169,9 +176,10 @@ function handlePageSizeChange(newSize: number): void {
 function handleApplyFilters(): void {
   filters.value = {
     ...filters.value,
-    school_name: searchInputs.value.school_name || null,
+    city: searchInputs.value.city || filters.value.city,
+    school_name: filters.value.school_name,
     college_name: searchInputs.value.college_name || null,
-    major_name: searchInputs.value.major_name || null
+    major_name: filters.value.major_name
   };
   page.value = 1;
   fetchSchoolList();
@@ -187,10 +195,13 @@ function handleResetFilters(): void {
     order: 'asc'
   };
   searchInputs.value = {
+    city: '',
     school_name: '',
     college_name: '',
     major_name: ''
   };
+  filteredSchools.value = schools.value;
+  filteredMajors.value = majors.value;
   page.value = 1;
   fetchSchoolList();
 }
@@ -339,6 +350,48 @@ function useTemplate(template: string): void {
 }
 
 // ==========================================
+// FILTER FUNCTIONS
+// ==========================================
+
+function filterSchools(query: string): void {
+  searchInputs.value.school_name = query;
+  if (!query) {
+    filteredSchools.value = schools.value;
+    filters.value.school_name = null;
+  } else {
+    filteredSchools.value = schools.value.filter(school =>
+      school.toLowerCase().includes(query.toLowerCase())
+    );
+    filters.value.school_name = null;
+  }
+}
+
+function filterMajors(query: string): void {
+  searchInputs.value.major_name = query;
+  if (!query) {
+    filteredMajors.value = majors.value;
+    filters.value.major_name = null;
+  } else {
+    filteredMajors.value = majors.value.filter(major =>
+      major.toLowerCase().includes(query.toLowerCase())
+    );
+    filters.value.major_name = null;
+  }
+}
+
+function selectSchool(school: string): void {
+  filters.value.school_name = school;
+  searchInputs.value.school_name = school;
+  // Reload majors when school changes
+  fetchMajors();
+}
+
+function selectMajor(major: string): void {
+  filters.value.major_name = major;
+  searchInputs.value.major_name = major;
+}
+
+// ==========================================
 // LIFECYCLE
 // ==========================================
 
@@ -355,6 +408,10 @@ watch(
   (newCity, oldCity) => {
     if (newCity !== oldCity && newCity) {
       // Reload schools and majors when city changes
+      fetchSchools();
+      fetchMajors();
+    } else if (newCity !== oldCity && !newCity) {
+      // City cleared, reload all
       fetchSchools();
       fetchMajors();
     }
@@ -428,15 +485,18 @@ function getSortIcon(sortBy: string): string {
           <label class="block text-xs font-medium text-gray-600 mb-1">{{ t('school.filters.schoolName') }}</label>
           <el-select
             v-model="filters.school_name"
-            :placeholder="t('school.filters.all')"
+            filterable
+            remote
+            :remote-method="filterSchools"
+            :placeholder="t('school.filters.schoolName')"
             class="w-full"
             size="default"
             clearable
             :loading="isSchoolsLoading"
-            @focus="fetchSchools"
+            @change="selectSchool"
           >
             <el-option
-              v-for="school in schools"
+              v-for="school in filteredSchools"
               :key="school"
               :label="school"
               :value="school"
@@ -461,15 +521,18 @@ function getSortIcon(sortBy: string): string {
           <label class="block text-xs font-medium text-gray-600 mb-1">{{ t('school.filters.majorName') }}</label>
           <el-select
             v-model="filters.major_name"
-            :placeholder="t('school.filters.all')"
+            filterable
+            remote
+            :remote-method="filterMajors"
+            :placeholder="t('school.filters.majorName')"
             class="w-full"
             size="default"
             clearable
             :loading="isMajorsLoading"
-            @focus="fetchMajors"
+            @change="selectMajor"
           >
             <el-option
-              v-for="major in majors"
+              v-for="major in filteredMajors"
               :key="major"
               :label="major"
               :value="major"
