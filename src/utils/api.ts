@@ -1193,7 +1193,7 @@ export const blogTagApi = {
     }
 
     const queryString = queryParams.toString();
-    const url = queryString 
+    const url = queryString
       ? `${API_BASE_URL}/blogs/tags?${queryString}`
       : `${API_BASE_URL}/blogs/tags`;
 
@@ -1236,6 +1236,176 @@ export const blogTagApi = {
       method: 'PUT',
       headers: getAuthHeaders(token),
       body: JSON.stringify({ tags })
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  }
+};
+
+// ==========================================
+// SCHOOL INFO API ENDPOINTS
+// ==========================================
+
+export const schoolApi = {
+  /**
+   * Get list of schools with filtering, sorting and pagination
+   * GET /school-info/schools
+   *
+   * @param token - JWT access token
+   * @param params - Query parameters for filtering and pagination
+   * @returns Promise with paginated school list
+   */
+  list: async (token: string, params: {
+    page?: number;
+    page_size?: number;
+    city?: string | null;
+    school_name?: string | null;
+    college_name?: string | null;
+    major_name?: string | null;
+    sort_by?: string;
+    order?: 'asc' | 'desc';
+  } = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (params.page !== undefined) {
+      queryParams.append('page', params.page.toString());
+    }
+    if (params.page_size !== undefined) {
+      queryParams.append('page_size', params.page_size.toString());
+    }
+    if (params.city !== undefined && params.city !== null) {
+      queryParams.append('city', params.city);
+    }
+    if (params.school_name !== undefined && params.school_name !== null) {
+      queryParams.append('school_name', params.school_name);
+    }
+    if (params.college_name !== undefined && params.college_name !== null) {
+      queryParams.append('college_name', params.college_name);
+    }
+    if (params.major_name !== undefined && params.major_name !== null) {
+      queryParams.append('major_name', params.major_name);
+    }
+    if (params.sort_by !== undefined) {
+      queryParams.append('sort_by', params.sort_by);
+    }
+    if (params.order !== undefined) {
+      queryParams.append('order', params.order);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/school-info/schools?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get school details by ID
+   * GET /school-info/schools/{school_id}
+   *
+   * @param token - JWT access token
+   * @param schoolId - School ID
+   * @returns Promise with school details
+   */
+  getById: async (token: string, schoolId: string) => {
+    const response = await fetch(`${API_BASE_URL}/school-info/schools/${schoolId}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Update school progress (cutoff score, contact info, etc.)
+   * PUT /school-info/schools/{school_id}/progress
+   *
+   * @param token - JWT access token
+   * @param schoolId - School ID
+   * @param updateData - Update data (cutoff_score, contact_phone, etc.)
+   * @returns Promise with updated school info
+   */
+  updateProgress: async (
+    token: string,
+    schoolId: string,
+    updateData: {
+      cutoff_score?: string | null;
+      contact_phone?: string | null;
+      supervisor_name?: string | null;
+      supervisor_contact?: string | null;
+      email_status?: number | null;
+    }
+  ) => {
+    const response = await fetch(`${API_BASE_URL}/school-info/schools/${schoolId}/progress`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(updateData)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get list of available cities for filtering
+   * GET /school-info/filters/cities
+   *
+   * @param token - JWT access token
+   * @returns Promise with list of cities
+   */
+  getCities: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/school-info/filters/cities`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get list of available school names for filtering
+   * GET /school-info/filters/schools
+   *
+   * @param token - JWT access token
+   * @param city - Optional city filter
+   * @returns Promise with list of school names
+   */
+  getSchools: async (token: string, city?: string | null) => {
+    const queryParams = new URLSearchParams();
+    if (city !== undefined && city !== null && city.trim() !== '') {
+      queryParams.append('city', city);
+    }
+
+    const queryString = queryParams.toString();
+    const url = queryString
+      ? `${API_BASE_URL}/school-info/filters/schools?${queryString}`
+      : `${API_BASE_URL}/school-info/filters/schools`;
+
+    const response = await fetch(url, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get list of available major names for filtering
+   * GET /school-info/filters/majors
+   *
+   * @param token - JWT access token
+   * @param schoolName - Optional school name filter
+   * @returns Promise with list of major names
+   */
+  getMajors: async (token: string, schoolName?: string | null) => {
+    const queryParams = new URLSearchParams();
+    if (schoolName !== undefined && schoolName !== null && schoolName.trim() !== '') {
+      queryParams.append('school_name', schoolName);
+    }
+
+    const queryString = queryParams.toString();
+    const url = queryString
+      ? `${API_BASE_URL}/school-info/filters/majors?${queryString}`
+      : `${API_BASE_URL}/school-info/filters/majors`;
+
+    const response = await fetch(url, {
+      headers: getAuthHeaders(token)
     });
     if (!response.ok) await handleApiError(response);
     return response.json();

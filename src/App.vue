@@ -17,6 +17,8 @@ import FeedbackView from './components/FeedbackView.vue';
 import BlogView from './components/BlogView.vue';
 import BlogDetail from './components/BlogDetail.vue';
 import BlogEditor from './components/BlogEditor.vue';
+import SchoolView from './components/SchoolView.vue';
+import SchoolDetail from './components/SchoolDetail.vue';
 
 // Import Element Plus icons
 import {
@@ -25,13 +27,14 @@ import {
   Upload,
   Reading,
   Document,
-  ChatDotRound
+  ChatDotRound,
+  School
 } from '@element-plus/icons-vue';
 
 // Initialize i18n
 const { t } = useI18n();
 
-type DashboardMenu = 'profile' | 'questions' | 'upload' | 'practice' | 'mistakes' | 'feedback' | 'blog';
+type DashboardMenu = 'profile' | 'questions' | 'upload' | 'practice' | 'mistakes' | 'feedback' | 'blog' | 'school';
 
 // Global App State
 const token = ref<string | null>(localStorage.getItem('access_token'));
@@ -45,6 +48,9 @@ const isSidebarCollapsed = ref<boolean>(false);
 const selectedBlogId = ref<number | null>(null);
 const editingBlogId = ref<number | null>(null);
 const isCreatingBlog = ref<boolean>(false);
+
+// School specific state
+const selectedSchoolId = ref<string | null>(null);
 
 // ==========================================
 // SESSION MANAGEMENT
@@ -130,6 +136,18 @@ function handleBlogSaved(): void {
   handleBlogBack();
 }
 
+// ==========================================
+// SCHOOL NAVIGATION HANDLERS
+// ==========================================
+
+function handleViewSchool(schoolId: string): void {
+  selectedSchoolId.value = schoolId;
+}
+
+function handleSchoolBack(): void {
+  selectedSchoolId.value = null;
+}
+
 onMounted(() => {
   if (token.value) {
     fetchUserProfile();
@@ -140,6 +158,7 @@ onMounted(() => {
 const menuItems = [
   { key: 'profile' as DashboardMenu, labelKey: 'nav.profile', icon: User },
   { key: 'blog' as DashboardMenu, labelKey: 'blog.title', icon: Document },
+  { key: 'school' as DashboardMenu, labelKey: 'school.title', icon: School },
   { key: 'questions' as DashboardMenu, labelKey: 'nav.questions', icon: Files },
   { key: 'upload' as DashboardMenu, labelKey: 'nav.upload', icon: Upload },
   { key: 'practice' as DashboardMenu, labelKey: 'nav.practice', icon: Reading },
@@ -333,6 +352,19 @@ const menuItems = [
           <FeedbackView
             v-else-if="activeMenu === 'feedback'"
             :token="token"
+          />
+
+          <SchoolView
+            v-else-if="activeMenu === 'school' && !selectedSchoolId"
+            :token="token"
+            @view-school="handleViewSchool"
+          />
+
+          <SchoolDetail
+            v-else-if="activeMenu === 'school' && selectedSchoolId"
+            :token="token"
+            :school-id="selectedSchoolId"
+            @back="handleSchoolBack"
           />
         </div>
       </main>

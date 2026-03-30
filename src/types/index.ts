@@ -499,3 +499,68 @@ export interface BlogTagListResponse {
   items: BlogTagResponse[];
   total: number;
 }
+
+// ==========================================
+// SCHOOL INFO TYPES (from schemas/school.py)
+// ==========================================
+
+export interface SchoolInfoResponse {
+  school_name: string;
+  college_name: string;
+  major_name: string;
+  direction_name: string;
+  id: string;
+  city: string;
+  region: number;
+  school_code: string;
+  college_code: string;
+  major_code: string;
+  direction_code: string;
+  adjustment_count: number;
+  create_time: string;
+  remarks: string | null;
+  cutoff_score: string | null;
+  contact_phone: string | null;
+  supervisor_name: string | null;
+  supervisor_contact: string | null;
+  email_status: number;
+}
+
+export interface SchoolInfoUpdate {
+  cutoff_score?: string | null;
+  contact_phone?: string | null;
+  supervisor_name?: string | null;
+  supervisor_contact?: string | null;
+  email_status?: number | null;
+}
+
+export interface SchoolInfoListResponse {
+  items: SchoolInfoResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface SchoolInfoListParams {
+  page?: number;
+  page_size?: number;
+  city?: string | null;
+  school_name?: string | null;
+  college_name?: string | null;
+  major_name?: string | null;
+  sort_by?: string;
+  order?: 'asc' | 'desc';
+}
+
+export interface CitiesResponse {
+  cities: string[];
+}
+
+export interface SchoolsResponse {
+  schools: string[];
+}
+
+export interface MajorsResponse {
+  majors: string[];
+}
