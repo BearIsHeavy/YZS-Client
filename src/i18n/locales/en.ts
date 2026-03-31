@@ -210,6 +210,8 @@ export default {
   // Pagination
   pagination: {
     total: 'Total: {total}',
+    currentPage: 'Page {current} of {pages}',
+    pageSizeLabel: '{size} items/page',
     pageSize: 'Page Size',
   },
 

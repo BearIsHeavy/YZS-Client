@@ -771,24 +771,21 @@ function getSortIcon(sortBy: string): string {
       <!-- Pagination -->
       <div class="border-t border-gray-200 px-4 py-3 flex items-center justify-between bg-gray-50">
         <div class="text-sm text-gray-600">
-          {{ t('pagination.total').replace('{total}', total.toString()) }}
+          <span>{{ t('pagination.total').replace('{total}', total.toString()) }}</span>
+          <span class="mx-2">|</span>
+          <span>{{ t('pagination.currentPage').replace('{current}', page.toString()).replace('{pages}', totalPages.toString()) }}</span>
+          <span class="mx-2">|</span>
+          <span>{{ t('pagination.pageSizeLabel').replace('{size}', pageSize.toString()) }}</span>
         </div>
-        <div class="flex items-center gap-4">
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-600">{{ t('pagination.pageSize') }}:</span>
-            <el-select v-model="pageSize" size="small" @change="handlePageSizeChange" class="w-24">
-              <el-option :label="10" :value="10" />
-              <el-option :label="20" :value="20" />
-              <el-option :label="50" :value="50" />
-              <el-option :label="100" :value="100" />
-            </el-select>
-          </div>
+        <div>
           <el-pagination
             :current-page="page"
             :page-size="pageSize"
             :total="total"
-            layout="prev, pager, next"
-            @change="handlePageChange"
+            :page-sizes="[10, 20, 50, 100]"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handlePageSizeChange"
+            @current-change="handlePageChange"
           />
         </div>
       </div>

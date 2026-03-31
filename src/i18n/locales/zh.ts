@@ -210,6 +210,8 @@ export default {
   // Pagination
   pagination: {
     total: '共 {total} 条',
+    currentPage: '第 {current} 页 / 共 {pages} 页',
+    pageSizeLabel: '每页 {size} 条',
     pageSize: '每页数量',
   },
 
