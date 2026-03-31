@@ -685,13 +685,13 @@ function getSortIcon(sortBy: string): string {
                 </div>
               </th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {{ t('school.table.city') }}
+                {{ t('school.table.direction') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {{ t('school.table.cutoffScore') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {{ t('school.table.status') }}
+                {{ t('school.table.city') }}
               </th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {{ t('common.actions') }}
@@ -732,9 +732,8 @@ function getSortIcon(sortBy: string): string {
                 <div class="text-xs text-gray-500">{{ school.major_code }}</div>
               </td>
               <td class="px-4 py-3">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                  {{ school.city }}
-                </span>
+                <div class="text-gray-700">{{ school.direction_name || '-' }}</div>
+                <div class="text-xs text-gray-500">{{ school.direction_code || '' }}</div>
               </td>
               <td class="px-4 py-3">
                 <span v-if="school.cutoff_score" class="text-sm font-medium text-gray-900">
@@ -743,15 +742,8 @@ function getSortIcon(sortBy: string): string {
                 <span v-else class="text-xs text-gray-400">-</span>
               </td>
               <td class="px-4 py-3">
-                <span
-                  :class="{
-                    'bg-green-100 text-green-800': school.email_status === 1,
-                    'bg-yellow-100 text-yellow-800': school.email_status === 0,
-                    'bg-red-100 text-red-800': school.email_status === 2
-                  }"
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                >
-                  {{ school.email_status === 1 ? t('school.status.completed') : school.email_status === 0 ? t('school.status.pending') : t('school.status.failed') }}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                  {{ school.city }}
                 </span>
               </td>
               <td class="px-4 py-3">
@@ -862,6 +854,14 @@ function getSortIcon(sortBy: string): string {
             <div class="flex justify-between">
               <dt class="text-gray-600">{{ t('school.detail.majorCode') }}</dt>
               <dd class="text-gray-900">{{ schoolDetail.major_code }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.direction') }}</dt>
+              <dd class="text-gray-900">{{ schoolDetail.direction_name || '-' }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.directionCode') }}</dt>
+              <dd class="text-gray-900">{{ schoolDetail.direction_code || '-' }}</dd>
             </div>
           </dl>
         </div>

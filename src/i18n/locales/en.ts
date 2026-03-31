@@ -424,6 +424,7 @@ export default {
       school: 'School',
       college: 'College',
       major: 'Major',
+      direction: 'Direction',
       city: 'City',
       cutoffScore: 'Cutoff Score',
       status: 'Status',

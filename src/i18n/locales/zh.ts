@@ -424,6 +424,7 @@ export default {
       school: '学校',
       college: '学院',
       major: '专业',
+      direction: '研究方向',
       city: '城市',
       cutoffScore: ' cutoff 分数',
       status: '状态',
