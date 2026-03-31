@@ -3,8 +3,9 @@
 
 import type { ValidationError } from '../types';
 
-// API Base URL - can be configured via environment variable
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// API Base URL - use empty string for proxy in development
+// In production, set VITE_API_URL to your backend URL
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 /**
  * Helper to strictly parse and format backend FastAPI errors

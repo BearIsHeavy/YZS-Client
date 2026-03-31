@@ -56,6 +56,12 @@ const isMajorsLoading = ref(false);
 const filteredSchools = ref<string[]>([]);
 const filteredMajors = ref<string[]>([]);
 
+// School Detail State
+const showDetailDialog = ref(false);
+const selectedSchoolId = ref<string | null>(null);
+const schoolDetail = ref<SchoolInfoResponse | null>(null);
+const isDetailLoading = ref(false);
+
 // Curl Runner State
 const showCurlDialog = ref(false);
 const curlCommand = ref('');
@@ -217,7 +223,27 @@ function handleSortChange(sortBy: string): void {
 }
 
 function handleViewSchool(school: SchoolInfoResponse): void {
-  emit('view-school', school.id);
+  selectedSchoolId.value = school.id;
+  fetchSchoolDetail(school.id);
+}
+
+async function fetchSchoolDetail(schoolId: string): Promise<void> {
+  isDetailLoading.value = true;
+  try {
+    const data = await schoolApi.getById(props.token, schoolId);
+    schoolDetail.value = data;
+    showDetailDialog.value = true;
+  } catch (err: unknown) {
+    console.error('Failed to fetch school detail:', err);
+  } finally {
+    isDetailLoading.value = false;
+  }
+}
+
+function closeDetailDialog(): void {
+  showDetailDialog.value = false;
+  schoolDetail.value = null;
+  selectedSchoolId.value = null;
 }
 
 // ==========================================
@@ -703,6 +729,117 @@ function getSortIcon(sortBy: string): string {
         </div>
       </div>
     </div>
+
+    <!-- School Detail Dialog -->
+    <el-dialog
+      v-model="showDetailDialog"
+      :title="t('school.detail.title')"
+      width="900px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="isDetailLoading" class="flex justify-center items-center py-12">
+        <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+
+      <div v-else-if="schoolDetail" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Basic Information -->
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h4 class="text-lg font-semibold text-gray-800 mb-3">{{ t('school.detail.basicInfo') }}</h4>
+          <dl class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.schoolName') }}</dt>
+              <dd class="text-gray-900 font-medium">{{ schoolDetail.school_name }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.schoolCode') }}</dt>
+              <dd class="text-gray-900">{{ schoolDetail.school_code }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.college') }}</dt>
+              <dd class="text-gray-900">{{ schoolDetail.college_name }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.collegeCode') }}</dt>
+              <dd class="text-gray-900">{{ schoolDetail.college_code }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.major') }}</dt>
+              <dd class="text-gray-900">{{ schoolDetail.major_name }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.majorCode') }}</dt>
+              <dd class="text-gray-900">{{ schoolDetail.major_code }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Location & Status -->
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h4 class="text-lg font-semibold text-gray-800 mb-3">{{ t('school.detail.location') }}</h4>
+          <dl class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.city') }}</dt>
+              <dd class="text-gray-900">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                  {{ schoolDetail.city }}
+                </span>
+              </dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.region') }}</dt>
+              <dd class="text-gray-900">
+                {{ schoolDetail.region === 1 ? t('school.region.1') : schoolDetail.region === 2 ? t('school.region.2') : t('school.region.3') }}
+              </dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.emailStatus') }}</dt>
+              <dd class="text-gray-900">
+                <span :class="{
+                  'bg-green-100 text-green-800': schoolDetail.email_status === 1,
+                  'bg-yellow-100 text-yellow-800': schoolDetail.email_status === 0,
+                  'bg-red-100 text-red-800': schoolDetail.email_status === 2
+                }" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium">
+                  {{ schoolDetail.email_status === 1 ? t('school.status.completed') : schoolDetail.email_status === 0 ? t('school.status.pending') : t('school.status.failed') }}
+                </span>
+              </dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.adjustmentCount') }}</dt>
+              <dd class="text-gray-900">{{ schoolDetail.adjustment_count }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Progress Information -->
+        <div class="border rounded-lg p-4 bg-gray-50 md:col-span-2">
+          <h4 class="text-lg font-semibold text-gray-800 mb-3">{{ t('school.detail.progressInfo') }}</h4>
+          <dl class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.cutoffScore') }}</dt>
+              <dd class="text-gray-900 font-medium">{{ schoolDetail.cutoff_score || '-' }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.contactPhone') }}</dt>
+              <dd class="text-gray-900">{{ schoolDetail.contact_phone || '-' }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.supervisorName') }}</dt>
+              <dd class="text-gray-900">{{ schoolDetail.supervisor_name || '-' }}</dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-gray-600">{{ t('school.detail.supervisorContact') }}</dt>
+              <dd class="text-gray-900">{{ schoolDetail.supervisor_contact || '-' }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="closeDetailDialog">
+          {{ t('common.close') }}
+        </el-button>
+      </template>
+    </el-dialog>
 
     <!-- Curl Runner Dialog -->
     <el-dialog

@@ -341,7 +341,6 @@ const menuItems = [
           <SchoolView
             v-else-if="activeMenu === 'school'"
             :token="token"
-            @view-school="() => {}"
           />
         </div>
       </main>
