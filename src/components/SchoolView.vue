@@ -61,6 +61,17 @@ const showDetailDialog = ref(false);
 const selectedSchoolId = ref<string | null>(null);
 const schoolDetail = ref<SchoolInfoResponse | null>(null);
 const isDetailLoading = ref(false);
+const isEditing = ref(false);
+const isSaving = ref(false);
+
+// Form state for editing
+const formState = ref({
+  cutoff_score: '',
+  contact_phone: '',
+  supervisor_name: '',
+  supervisor_contact: '',
+  email_status: 0
+});
 
 // Curl Runner State
 const showCurlDialog = ref(false);
@@ -232,7 +243,16 @@ async function fetchSchoolDetail(schoolId: string): Promise<void> {
   try {
     const data = await schoolApi.getById(props.token, schoolId);
     schoolDetail.value = data;
+    // Initialize form state
+    formState.value = {
+      cutoff_score: data.cutoff_score || '',
+      contact_phone: data.contact_phone || '',
+      supervisor_name: data.supervisor_name || '',
+      supervisor_contact: data.supervisor_contact || '',
+      email_status: data.email_status || 0
+    };
     showDetailDialog.value = true;
+    isEditing.value = false;
   } catch (err: unknown) {
     console.error('Failed to fetch school detail:', err);
   } finally {
@@ -244,6 +264,50 @@ function closeDetailDialog(): void {
   showDetailDialog.value = false;
   schoolDetail.value = null;
   selectedSchoolId.value = null;
+  isEditing.value = false;
+}
+
+function startEditing(): void {
+  isEditing.value = true;
+}
+
+function cancelEditing(): void {
+  if (schoolDetail.value) {
+    formState.value = {
+      cutoff_score: schoolDetail.value.cutoff_score || '',
+      contact_phone: schoolDetail.value.contact_phone || '',
+      supervisor_name: schoolDetail.value.supervisor_name || '',
+      supervisor_contact: schoolDetail.value.supervisor_contact || '',
+      email_status: schoolDetail.value.email_status || 0
+    };
+  }
+  isEditing.value = false;
+}
+
+async function saveProgress(): Promise<void> {
+  if (!selectedSchoolId.value) return;
+  
+  isSaving.value = true;
+  try {
+    const updatedData = await schoolApi.updateProgress(props.token, selectedSchoolId.value, {
+      cutoff_score: formState.value.cutoff_score || null,
+      contact_phone: formState.value.contact_phone || null,
+      supervisor_name: formState.value.supervisor_name || null,
+      supervisor_contact: formState.value.supervisor_contact || null,
+      email_status: formState.value.email_status
+    });
+    
+    schoolDetail.value = updatedData;
+    isEditing.value = false;
+    
+    // Show success message
+    alert('Progress saved successfully!');
+  } catch (err: unknown) {
+    console.error('Failed to save progress:', err);
+    alert('Failed to save progress. Please try again.');
+  } finally {
+    isSaving.value = false;
+  }
 }
 
 // ==========================================
@@ -737,6 +801,38 @@ function getSortIcon(sortBy: string): string {
       width="900px"
       :close-on-click-modal="false"
     >
+      <!-- Header with Edit/Save buttons -->
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">{{ t('school.detail.progressInfo') }}</h3>
+        <div class="flex gap-2" v-if="!isDetailLoading">
+          <el-button
+            v-if="!isEditing"
+            type="primary"
+            size="small"
+            @click="startEditing"
+          >
+            {{ t('common.edit') }}
+          </el-button>
+          <template v-else>
+            <el-button
+              size="small"
+              @click="cancelEditing"
+              :disabled="isSaving"
+            >
+              {{ t('common.cancel') }}
+            </el-button>
+            <el-button
+              type="primary"
+              size="small"
+              @click="saveProgress"
+              :loading="isSaving"
+            >
+              {{ t('common.save') }}
+            </el-button>
+          </template>
+        </div>
+      </div>
+
       <div v-if="isDetailLoading" class="flex justify-center items-center py-12">
         <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
@@ -813,24 +909,97 @@ function getSortIcon(sortBy: string): string {
         <!-- Progress Information -->
         <div class="border rounded-lg p-4 bg-gray-50 md:col-span-2">
           <h4 class="text-lg font-semibold text-gray-800 mb-3">{{ t('school.detail.progressInfo') }}</h4>
-          <dl class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div class="flex justify-between">
-              <dt class="text-gray-600">{{ t('school.detail.cutoffScore') }}</dt>
-              <dd class="text-gray-900 font-medium">{{ schoolDetail.cutoff_score || '-' }}</dd>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Cutoff Score -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                {{ t('school.detail.cutoffScore') }}
+              </label>
+              <el-input
+                v-if="isEditing"
+                v-model="formState.cutoff_score"
+                :placeholder="t('school.detail.cutoffScore')"
+                size="default"
+              />
+              <div v-else class="text-sm text-gray-900 py-2">
+                {{ schoolDetail.cutoff_score || '-' }}
+              </div>
             </div>
-            <div class="flex justify-between">
-              <dt class="text-gray-600">{{ t('school.detail.contactPhone') }}</dt>
-              <dd class="text-gray-900">{{ schoolDetail.contact_phone || '-' }}</dd>
+
+            <!-- Contact Phone -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                {{ t('school.detail.contactPhone') }}
+              </label>
+              <el-input
+                v-if="isEditing"
+                v-model="formState.contact_phone"
+                :placeholder="t('school.detail.contactPhone')"
+                size="default"
+              />
+              <div v-else class="text-sm text-gray-900 py-2">
+                {{ schoolDetail.contact_phone || '-' }}
+              </div>
             </div>
-            <div class="flex justify-between">
-              <dt class="text-gray-600">{{ t('school.detail.supervisorName') }}</dt>
-              <dd class="text-gray-900">{{ schoolDetail.supervisor_name || '-' }}</dd>
+
+            <!-- Supervisor Name -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                {{ t('school.detail.supervisorName') }}
+              </label>
+              <el-input
+                v-if="isEditing"
+                v-model="formState.supervisor_name"
+                :placeholder="t('school.detail.supervisorName')"
+                size="default"
+              />
+              <div v-else class="text-sm text-gray-900 py-2">
+                {{ schoolDetail.supervisor_name || '-' }}
+              </div>
             </div>
-            <div class="flex justify-between">
-              <dt class="text-gray-600">{{ t('school.detail.supervisorContact') }}</dt>
-              <dd class="text-gray-900">{{ schoolDetail.supervisor_contact || '-' }}</dd>
+
+            <!-- Supervisor Contact -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                {{ t('school.detail.supervisorContact') }}
+              </label>
+              <el-input
+                v-if="isEditing"
+                v-model="formState.supervisor_contact"
+                :placeholder="t('school.detail.supervisorContact')"
+                size="default"
+              />
+              <div v-else class="text-sm text-gray-900 py-2">
+                {{ schoolDetail.supervisor_contact || '-' }}
+              </div>
             </div>
-          </dl>
+
+            <!-- Email Status -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                {{ t('school.detail.emailStatus') }}
+              </label>
+              <el-select
+                v-if="isEditing"
+                v-model="formState.email_status"
+                class="w-full"
+                size="default"
+              >
+                <el-option :label="t('school.status.pending')" :value="0" />
+                <el-option :label="t('school.status.completed')" :value="1" />
+                <el-option :label="t('school.status.failed')" :value="2" />
+              </el-select>
+              <div v-else>
+                <span :class="{
+                  'bg-green-100 text-green-800': schoolDetail.email_status === 1,
+                  'bg-yellow-100 text-yellow-800': schoolDetail.email_status === 0,
+                  'bg-red-100 text-red-800': schoolDetail.email_status === 2
+                }" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium">
+                  {{ schoolDetail.email_status === 1 ? t('school.status.completed') : schoolDetail.email_status === 0 ? t('school.status.pending') : t('school.status.failed') }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
