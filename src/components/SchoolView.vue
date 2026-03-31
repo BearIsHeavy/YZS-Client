@@ -4,6 +4,7 @@ import { ref, onMounted, watch } from 'vue';
 import type { SchoolInfoResponse, SchoolInfoListParams } from '../types';
 import { schoolApi, API_BASE_URL } from '../utils/api';
 import { useI18n } from '../i18n';
+import SchoolDataFetch from './SchoolDataFetch.vue';
 
 const { t } = useI18n();
 
@@ -73,7 +74,10 @@ const formState = ref({
   email_status: 0
 });
 
-// Curl Runner State
+// Fetch Task Dialog State
+const showFetchDialog = ref(false);
+
+// Curl Runner State (kept for custom API calls)
 const showCurlDialog = ref(false);
 const curlCommand = ref('');
 const curlResult = ref<unknown | null>(null);
@@ -88,8 +92,22 @@ const curlTemplates = {
 };
 
 // ==========================================
-// DATA FETCHING
+// EVENT HANDLERS
 // ==========================================
+
+function openFetchDialog(): void {
+  showFetchDialog.value = true;
+}
+
+function closeFetchDialog(): void {
+  showFetchDialog.value = false;
+}
+
+function handleFetchComplete(): void {
+  // Refresh school list when fetch is complete
+  fetchSchoolList();
+  closeFetchDialog();
+}
 
 async function fetchCities(): Promise<void> {
   if (cities.value.length > 0) return;
@@ -532,19 +550,34 @@ function getSortIcon(sortBy: string): string {
         <h2 class="text-2xl font-bold text-gray-800">{{ t('school.title') }}</h2>
         <p class="text-sm text-gray-500 mt-1">{{ t('school.description') }}</p>
       </div>
-      <el-button
-        type="primary"
-        size="default"
-        @click="openCurlDialog"
-        class="bg-indigo-600 hover:bg-indigo-700"
-      >
-        <template #icon>
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-          </svg>
-        </template>
-        {{ t('curl.customFetch') }}
-      </el-button>
+      <div class="flex gap-2">
+        <el-button
+          type="success"
+          size="default"
+          @click="openFetchDialog"
+          class="bg-green-600 hover:bg-green-700"
+        >
+          <template #icon>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+            </svg>
+          </template>
+          {{ t('curl.fetchData') }}
+        </el-button>
+        <el-button
+          type="primary"
+          size="default"
+          @click="openCurlDialog"
+          class="bg-indigo-600 hover:bg-indigo-700"
+        >
+          <template #icon>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </template>
+          {{ t('curl.customFetch') }}
+        </el-button>
+      </div>
     </div>
 
     <!-- Filters -->
@@ -1005,6 +1038,20 @@ function getSortIcon(sortBy: string): string {
           {{ t('common.close') }}
         </el-button>
       </template>
+    </el-dialog>
+
+    <!-- Fetch Task Dialog -->
+    <el-dialog
+      v-model="showFetchDialog"
+      :title="t('curl.fetchDataTitle')"
+      width="700px"
+      :close-on-click-modal="false"
+    >
+      <SchoolDataFetch
+        :token="props.token"
+        @refresh="handleFetchComplete"
+        @close="closeFetchDialog"
+      />
     </el-dialog>
 
     <!-- Curl Runner Dialog -->

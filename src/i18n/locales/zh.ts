@@ -469,6 +469,9 @@ export default {
   curl: {
     title: 'API Curl 执行器',
     description: '通过粘贴 curl 命令执行后端 API 请求',
+    fetchData: '获取数据',
+    fetchDataTitle: '获取学校数据',
+    customFetch: '自定义 API',
     quickTemplates: '快捷模板',
     curlCommand: 'Curl 命令',
     placeholder: '在此粘贴 curl 命令，例如：curl -X GET "http://localhost:8000/school-info/schools" -H "Authorization: Bearer YOUR_TOKEN"',
@@ -504,6 +507,27 @@ export default {
       method: '方法',
       url: '网址',
       status: '状态',
+    },
+    // Fetch Task Status
+    fetchTask: {
+      inputTitle: '获取学校数据',
+      curlCommandLabel: 'cURL 命令',
+      curlCommandHelp: '打开浏览器 DevTools → Network 标签 → 访问学信网 → 右键请求 → 复制 → 复制为 cURL',
+      pagesLabel: '页数',
+      startFetch: '开始获取',
+      starting: '正在启动...',
+      status: {
+        none: '未开始',
+        pending: '等待中',
+        running: '处理中',
+        success: '已完成',
+        failed: '失败',
+      },
+      fetching: '正在获取数据，请稍候...',
+      recordsFetched: '已获取 {count} 条数据',
+      errorDetails: '错误详情',
+      refreshList: '刷新学校列表',
+      retry: '重试',
     },
   },
 };

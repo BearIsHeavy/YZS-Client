@@ -469,6 +469,9 @@ export default {
   curl: {
     title: 'API Curl Runner',
     description: 'Execute backend API requests by pasting curl commands',
+    fetchData: 'Fetch Data',
+    fetchDataTitle: 'Fetch School Data',
+    customFetch: 'Custom API',
     quickTemplates: 'Quick Templates',
     curlCommand: 'Curl Command',
     placeholder: 'Paste your curl command here, e.g., curl -X GET "http://localhost:8000/school-info/schools" -H "Authorization: Bearer YOUR_TOKEN"',
@@ -504,6 +507,27 @@ export default {
       method: 'Method',
       url: 'URL',
       status: 'Status',
+    },
+    // Fetch Task Status
+    fetchTask: {
+      inputTitle: 'Fetch School Data',
+      curlCommandLabel: 'cURL Command',
+      curlCommandHelp: 'Open browser DevTools → Network tab → Access CHSI website → Right-click request → Copy → Copy as cURL',
+      pagesLabel: 'Number of Pages',
+      startFetch: 'Start Fetch',
+      starting: 'Starting...',
+      status: {
+        none: 'Not Started',
+        pending: 'Waiting',
+        running: 'Processing',
+        success: 'Completed',
+        failed: 'Failed',
+      },
+      fetching: 'Fetching data, please wait...',
+      recordsFetched: '{count} records fetched',
+      errorDetails: 'Error Details',
+      refreshList: 'Refresh School List',
+      retry: 'Retry',
     },
   },
 };

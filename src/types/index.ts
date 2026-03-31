@@ -564,3 +564,27 @@ export interface SchoolsResponse {
 export interface MajorsResponse {
   majors: string[];
 }
+
+// ==========================================
+// SCHOOL DATA FETCH TASK TYPES
+// ==========================================
+
+export type FetchTaskStatusEnum = 'none' | 'pending' | 'running' | 'success' | 'failed'
+
+export interface FetchTaskStatusResponse {
+  status: FetchTaskStatusEnum;
+  error: string | null;
+  message: string | null;
+  fetched_count: number;
+}
+
+export interface CreateFetchTaskRequest {
+  curl_command: string;
+  mode: 'all' | 'incremental';
+  pages?: number;
+}
+
+export interface CreateFetchTaskResponse {
+  status: FetchTaskStatusEnum;
+  message: string;
+}

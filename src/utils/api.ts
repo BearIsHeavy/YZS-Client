@@ -1436,5 +1436,43 @@ export const schoolApi = {
     });
     if (!response.ok) await handleApiError(response);
     return response.json();
+  },
+
+  /**
+   * Create a school data fetch task
+   * POST /school-info/fetch
+   *
+   * @param token - JWT access token
+   * @param curlCommand - cURL command copied from browser DevTools
+   * @param pages - Number of pages to fetch (default: 10)
+   * @returns Promise with task creation result
+   */
+  createFetchTask: async (token: string, curlCommand: string, pages: number = 10) => {
+    const response = await fetch(`${API_BASE_URL}/school-info/fetch`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({
+        curl_command: curlCommand,
+        mode: 'all',
+        pages: pages
+      })
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get the status of the current fetch task
+   * GET /school-info/fetch/status
+   *
+   * @param token - JWT access token
+   * @returns Promise with task status
+   */
+  getFetchStatus: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/school-info/fetch/status`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
   }
 };
