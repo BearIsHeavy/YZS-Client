@@ -930,6 +930,47 @@ export const blogApi = {
   },
 
   /**
+   * Update a blog post with JSON data
+   * PUT /blogs/{blog_id}
+   * Content-Type: application/json
+   *
+   * Optional fields (all):
+   * - title: string | null (1-200 characters)
+   * - content_type: 'markdown' | 'html' | null
+   * - is_published: boolean | null
+   * - tags: string[] | null (max 5 tags, each max 10 chars)
+   *
+   * @param token - JWT access token
+   * @param blogId - Blog post ID
+   * @param updateData - Update data object
+   * @returns Promise with updated blog
+   */
+  updateWithJson: async (
+    token: string,
+    blogId: number,
+    updateData: {
+      title?: string | null;
+      content_type?: string | null;
+      is_published?: boolean | null;
+      tags?: string[] | null;
+    }
+  ) => {
+    const formData = new FormData();
+    if (updateData.title !== undefined) formData.append('title', updateData.title || '');
+    if (updateData.content_type !== undefined) formData.append('content_type', updateData.content_type || '');
+    if (updateData.is_published !== undefined) formData.append('is_published', String(updateData.is_published || false));
+    if (updateData.tags !== undefined) formData.append('tags', updateData.tags ? updateData.tags.join(',') : '');
+
+    const response = await fetch(`${API_BASE_URL}/blogs/${blogId}`, {
+      method: 'PUT',
+      headers: getUploadHeaders(token),
+      body: formData
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
    * Delete a blog post
    * DELETE /blogs/{blog_id}
    *
@@ -1218,25 +1259,6 @@ export const blogTagApi = {
       method: 'POST',
       headers: getAuthHeaders(token),
       body: JSON.stringify({ name: tagName })
-    });
-    if (!response.ok) await handleApiError(response);
-    return response.json();
-  },
-
-  /**
-   * Update blog tags
-   * PUT /blogs/{blog_id}/tags
-   *
-   * @param token - JWT access token
-   * @param blogId - Blog post ID
-   * @param tags - Array of tag names
-   * @returns Promise with updated blog
-   */
-  updateBlogTags: async (token: string, blogId: number, tags: string[]) => {
-    const response = await fetch(`${API_BASE_URL}/blogs/${blogId}/tags`, {
-      method: 'PUT',
-      headers: getAuthHeaders(token),
-      body: JSON.stringify({ tags })
     });
     if (!response.ok) await handleApiError(response);
     return response.json();

@@ -25,6 +25,8 @@ export interface UserResponse {
   name: string;
   phone?: string | null;
   gender: number; // 0:Unknown 1:Male 2:Female
+  role: string;
+  bio_file_path?: string | null;
   created_at: string;
 }
 
@@ -385,6 +387,7 @@ export interface BlogUpdate {
   content?: string | null;
   content_type?: ContentTypeEnum | null;
   is_published?: boolean | null;
+  tags?: string[] | null;  // Array of tag names
 }
 
 export interface BlogListItem {
