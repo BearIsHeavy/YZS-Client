@@ -13,6 +13,7 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
     "element-plus": "^2.13.2",
     "marked": "^17.0.5",
     "vue": "^3.5.25"

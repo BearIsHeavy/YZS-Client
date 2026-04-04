@@ -2,15 +2,33 @@
 // Plugin registry - defines all available plugins
 
 import type { PluginDefinition, PluginId } from './types';
+import type { Component } from 'vue';
+import {
+  User,
+  ChatDotRound,
+  School,
+  Files,
+  Reading,
+  Document,
+  Notebook,
+  Connection,
+  DataAnalysis,
+  Upload,
+  MagicStick
+} from '@element-plus/icons-vue';
+
+export interface PluginDefinitionWithIcon extends PluginDefinition {
+  icon: Component;
+}
 
 // All plugin definitions
-export const PLUGIN_DEFINITIONS: PluginDefinition[] = [
+export const PLUGIN_DEFINITIONS: PluginDefinitionWithIcon[] = [
   // Core plugins
   {
     id: 'profile',
     nameKey: 'nav.profile',
     descriptionKey: 'plugin.description.profile',
-    icon: 'User',
+    icon: User,
     menuKey: 'profile',
     category: 'core',
     defaultEnabled: true,
@@ -20,7 +38,7 @@ export const PLUGIN_DEFINITIONS: PluginDefinition[] = [
     id: 'feedback',
     nameKey: 'nav.feedback',
     descriptionKey: 'plugin.description.feedback',
-    icon: 'ChatDotRound',
+    icon: ChatDotRound,
     menuKey: 'feedback',
     category: 'core',
     defaultEnabled: true,
@@ -32,7 +50,7 @@ export const PLUGIN_DEFINITIONS: PluginDefinition[] = [
     id: 'school',
     nameKey: 'school.title',
     descriptionKey: 'plugin.description.school',
-    icon: 'School',
+    icon: School,
     menuKey: 'school',
     category: 'learning',
     defaultEnabled: true,
@@ -42,7 +60,7 @@ export const PLUGIN_DEFINITIONS: PluginDefinition[] = [
     id: 'questions',
     nameKey: 'nav.questions',
     descriptionKey: 'plugin.description.questions',
-    icon: 'Files',
+    icon: Files,
     menuKey: 'questions',
     category: 'learning',
     defaultEnabled: true,
@@ -52,7 +70,7 @@ export const PLUGIN_DEFINITIONS: PluginDefinition[] = [
     id: 'practice',
     nameKey: 'nav.practice',
     descriptionKey: 'plugin.description.practice',
-    icon: 'Reading',
+    icon: Reading,
     menuKey: 'practice',
     category: 'learning',
     defaultEnabled: true,
@@ -62,7 +80,7 @@ export const PLUGIN_DEFINITIONS: PluginDefinition[] = [
     id: 'mistakes',
     nameKey: 'nav.mistakes',
     descriptionKey: 'plugin.description.mistakes',
-    icon: 'Document',
+    icon: Document,
     menuKey: 'mistakes',
     category: 'learning',
     defaultEnabled: true,
@@ -72,7 +90,7 @@ export const PLUGIN_DEFINITIONS: PluginDefinition[] = [
     id: 'books',
     nameKey: 'nav.books',
     descriptionKey: 'plugin.description.books',
-    icon: 'Notebook',
+    icon: Notebook,
     menuKey: 'books',
     category: 'learning',
     defaultEnabled: false,
@@ -82,7 +100,7 @@ export const PLUGIN_DEFINITIONS: PluginDefinition[] = [
     id: 'knowledge',
     nameKey: 'nav.knowledge',
     descriptionKey: 'plugin.description.knowledge',
-    icon: 'Connection',
+    icon: Connection,
     menuKey: 'knowledge',
     category: 'learning',
     defaultEnabled: false,
@@ -92,7 +110,7 @@ export const PLUGIN_DEFINITIONS: PluginDefinition[] = [
     id: 'reports',
     nameKey: 'nav.reports',
     descriptionKey: 'plugin.description.reports',
-    icon: 'DataAnalysis',
+    icon: DataAnalysis,
     menuKey: 'reports',
     category: 'learning',
     defaultEnabled: false,
@@ -104,7 +122,7 @@ export const PLUGIN_DEFINITIONS: PluginDefinition[] = [
     id: 'upload',
     nameKey: 'nav.upload',
     descriptionKey: 'plugin.description.upload',
-    icon: 'Upload',
+    icon: Upload,
     menuKey: 'upload',
     category: 'tools',
     defaultEnabled: true,
@@ -114,7 +132,7 @@ export const PLUGIN_DEFINITIONS: PluginDefinition[] = [
     id: 'blog',
     nameKey: 'blog.title',
     descriptionKey: 'plugin.description.blog',
-    icon: 'Document',
+    icon: Document,
     menuKey: 'blog',
     category: 'tools',
     defaultEnabled: true,
@@ -124,7 +142,7 @@ export const PLUGIN_DEFINITIONS: PluginDefinition[] = [
     id: 'rag',
     nameKey: 'nav.rag',
     descriptionKey: 'plugin.description.rag',
-    icon: 'MagicStick',
+    icon: MagicStick,
     menuKey: 'rag',
     category: 'tools',
     defaultEnabled: false,

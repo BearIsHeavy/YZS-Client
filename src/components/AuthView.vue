@@ -131,7 +131,7 @@ async function loginUser(): Promise<void> {
 
           <div class="text-center text-sm">
             <span class="text-gray-600">{{ t('auth.noAccount') }}</span>
-            <el-button type="link" @click="currentAuthView = 'register'" class="text-indigo-600">
+            <el-button type="text" @click="currentAuthView = 'register'" class="text-indigo-600">
               {{ t('auth.registerNow') }}
             </el-button>
           </div>
@@ -193,7 +193,7 @@ async function loginUser(): Promise<void> {
 
           <div class="text-center text-sm">
             <span class="text-gray-600">{{ t('auth.alreadyHaveAccount') }}</span>
-            <el-button type="link" @click="currentAuthView = 'login'" class="text-indigo-600">
+            <el-button type="text" @click="currentAuthView = 'login'" class="text-indigo-600">
               {{ t('auth.loginNow') }}
             </el-button>
           </div>

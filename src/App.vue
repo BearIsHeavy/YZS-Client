@@ -151,6 +151,14 @@ const menuItems = computed(() => {
     .filter(plugin => pluginConfig.value[plugin.id]?.enabled ?? plugin.defaultEnabled)
     .sort((a, b) => (pluginConfig.value[a.id]?.order ?? a.order) - (pluginConfig.value[b.id]?.order ?? b.order));
 });
+
+function handleMenuSelect(index: string): void {
+  if (index === 'pluginSettings') {
+    showPluginSettings.value = true;
+  } else {
+    activeMenu.value = index as DashboardMenu;
+  }
+}
 </script>
 
 <template>
@@ -245,7 +253,7 @@ const menuItems = computed(() => {
         <!-- Menu Items -->
         <el-menu
           :default-active="activeMenu"
-          @select="(index: string) => activeMenu = index as DashboardMenu"
+          @select="handleMenuSelect"
           class="flex-1 border-none pt-4"
           :collapse="isSidebarCollapsed"
           :collapse-transition="true"
@@ -265,15 +273,15 @@ const menuItems = computed(() => {
 
         <!-- Sidebar Footer -->
         <div class="p-4 border-t border-gray-100">
-          <el-menu-item
+          <div
             @click="showPluginSettings = true"
-            class="mx-2 rounded-lg mb-1 text-gray-500 hover:text-indigo-600 cursor-pointer"
+            class="flex items-center gap-3 px-3 py-3 mx-2 rounded-lg mb-1 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 cursor-pointer transition-colors"
           >
             <el-icon :size="20" style="color: #374151;">
               <Setting />
             </el-icon>
-            <span style="color: #374151;">{{ t('nav.pluginSettings') }}</span>
-          </el-menu-item>
+            <span v-if="!isSidebarCollapsed" style="color: #374151;">{{ t('nav.pluginSettings') }}</span>
+          </div>
         </div>
       </aside>
 
