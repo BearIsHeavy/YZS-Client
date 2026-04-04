@@ -1,11 +1,13 @@
 <!-- src/App.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import type { UserResponse } from './types';
 import { userApi } from './utils/api';
 import { useI18n } from './i18n';
+import { usePlugins } from './plugins';
+import { PLUGIN_DEFINITIONS } from './plugins/registry';
 
-// Import components
+// Import Components
 import AuthView from './components/AuthView.vue';
 import ProfileView from './components/ProfileView.vue';
 import QuestionBankView from './components/QuestionBankView.vue';
@@ -19,21 +21,25 @@ import BlogDetail from './components/BlogDetail.vue';
 import BlogEditor from './components/BlogEditor.vue';
 import SchoolView from './components/SchoolView.vue';
 
+// New Plugin Components
+import BooksView from './components/BooksView.vue';
+import KnowledgeView from './components/KnowledgeView.vue';
+import ReportsView from './components/ReportsView.vue';
+import RAGChatView from './components/RAGChatView.vue';
+import PluginSettings from './plugins/components/PluginSettings.vue';
+
 // Import Element Plus icons
 import {
-  User,
-  Files,
-  Upload,
-  Reading,
-  Document,
-  ChatDotRound,
-  School
+  Setting
 } from '@element-plus/icons-vue';
 
 // Initialize i18n
 const { t } = useI18n();
 
-type DashboardMenu = 'profile' | 'questions' | 'upload' | 'practice' | 'mistakes' | 'feedback' | 'blog' | 'school';
+// Initialize Plugin System
+const { pluginConfig, isEnabled } = usePlugins();
+
+type DashboardMenu = 'profile' | 'questions' | 'upload' | 'practice' | 'mistakes' | 'feedback' | 'blog' | 'school' | 'books' | 'knowledge' | 'reports' | 'rag' | 'pluginSettings';
 
 // Global App State
 const token = ref<string | null>(localStorage.getItem('access_token'));
@@ -42,6 +48,7 @@ const activeMenu = ref<DashboardMenu>('profile');
 const isAppLoading = ref<boolean>(false);
 const globalError = ref<string | null>(null);
 const isSidebarCollapsed = ref<boolean>(false);
+const showPluginSettings = ref(false);
 
 // Blog specific state
 const selectedBlogId = ref<number | null>(null);
@@ -138,17 +145,12 @@ onMounted(() => {
   }
 });
 
-// Menu items configuration with icons
-const menuItems = [
-  { key: 'profile' as DashboardMenu, labelKey: 'nav.profile', icon: User },
-  { key: 'blog' as DashboardMenu, labelKey: 'blog.title', icon: Document },
-  { key: 'school' as DashboardMenu, labelKey: 'school.title', icon: School },
-  { key: 'questions' as DashboardMenu, labelKey: 'nav.questions', icon: Files },
-  { key: 'upload' as DashboardMenu, labelKey: 'nav.upload', icon: Upload },
-  { key: 'practice' as DashboardMenu, labelKey: 'nav.practice', icon: Reading },
-  { key: 'mistakes' as DashboardMenu, labelKey: 'nav.mistakes', icon: Document },
-  { key: 'feedback' as DashboardMenu, labelKey: 'nav.feedback', icon: ChatDotRound }
-] as const;
+// Dynamic menu items based on plugin configuration
+const menuItems = computed(() => {
+  return PLUGIN_DEFINITIONS
+    .filter(plugin => pluginConfig.value[plugin.id]?.enabled ?? plugin.defaultEnabled)
+    .sort((a, b) => (pluginConfig.value[a.id]?.order ?? a.order) - (pluginConfig.value[b.id]?.order ?? b.order));
+});
 </script>
 
 <template>
@@ -189,7 +191,7 @@ const menuItems = [
       <div class="flex items-center gap-4">
         <!-- Language Switcher -->
         <LanguageSwitcher />
-        
+
         <div class="hidden md:flex items-center gap-3 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
           <div class="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
             {{ currentUser.name.charAt(0).toUpperCase() }}
@@ -216,23 +218,23 @@ const menuItems = [
 
     <div class="flex flex-1 overflow-hidden">
       <!-- Sidebar Navigation -->
-      <aside 
+      <aside
         class="bg-white border-r border-gray-200 shadow-sm z-10 transition-all duration-300 flex flex-col"
         :class="isSidebarCollapsed ? 'w-20' : 'w-64'"
       >
         <!-- Collapse Toggle -->
         <div class="p-4 border-b border-gray-100 flex justify-end">
-          <el-button 
-            text 
-            size="small" 
+          <el-button
+            text
+            size="small"
             @click="isSidebarCollapsed = !isSidebarCollapsed"
             class="text-gray-500 hover:text-indigo-600"
           >
-            <svg 
-              class="w-5 h-5 transition-transform duration-300" 
+            <svg
+              class="w-5 h-5 transition-transform duration-300"
               :class="isSidebarCollapsed ? 'rotate-180' : ''"
-              fill="none" 
-              stroke="currentColor" 
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
@@ -250,73 +252,111 @@ const menuItems = [
         >
           <el-menu-item
             v-for="item in menuItems"
-            :key="item.key"
-            :index="item.key"
+            :key="item.id"
+            :index="item.menuKey"
             class="mx-2 rounded-lg mb-1"
           >
             <el-icon :size="20" style="color: #374151;">
               <component :is="item.icon" />
             </el-icon>
-            <span style="color: #374151;">{{ t(item.labelKey) }}</span>
+            <span style="color: #374151;">{{ t(item.nameKey) }}</span>
           </el-menu-item>
         </el-menu>
 
         <!-- Sidebar Footer -->
         <div class="p-4 border-t border-gray-100">
-          <div v-if="!isSidebarCollapsed" class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-3">
-            <div class="text-xs font-medium text-indigo-900 mb-1">Need Help?</div>
-            <div class="text-xs text-indigo-600">Check the documentation for usage guide.</div>
-          </div>
+          <el-menu-item
+            @click="showPluginSettings = true"
+            class="mx-2 rounded-lg mb-1 text-gray-500 hover:text-indigo-600 cursor-pointer"
+          >
+            <el-icon :size="20" style="color: #374151;">
+              <Setting />
+            </el-icon>
+            <span style="color: #374151;">{{ t('nav.pluginSettings') }}</span>
+          </el-menu-item>
         </div>
       </aside>
 
       <!-- Main Content Area -->
       <main class="flex-1 overflow-y-auto p-6 bg-gray-50">
-        <el-alert 
-          v-if="globalError" 
-          :title="globalError" 
-          type="error" 
-          show-icon 
-          class="mb-6" 
-          @close="globalError = null" 
+        <el-alert
+          v-if="globalError"
+          :title="globalError"
+          type="error"
+          show-icon
+          class="mb-6"
+          @close="globalError = null"
         />
 
         <div class="h-full">
+          <!-- Core Plugins -->
           <ProfileView
-            v-if="activeMenu === 'profile'"
+            v-if="activeMenu === 'profile' && isEnabled('profile')"
             :user="currentUser"
             @user-updated="handleUserUpdate"
           />
 
-          <QuestionBankView
-            v-else-if="activeMenu === 'questions'"
-            :token="token"
-            @navigate-to-upload="activeMenu = 'upload'"
-          />
-
-          <UploadQuestions
-            v-else-if="activeMenu === 'upload'"
-            :token="token"
-          />
-
-          <PracticeView
-            v-else-if="activeMenu === 'practice'"
-            :token="token"
-          />
-
-          <MistakeNotebook
-            v-else-if="activeMenu === 'mistakes'"
-            :token="token"
-          />
-
           <BlogView
-            v-else-if="activeMenu === 'blog' && !selectedBlogId && !editingBlogId && !isCreatingBlog"
+            v-else-if="activeMenu === 'blog' && !selectedBlogId && !editingBlogId && !isCreatingBlog && isEnabled('blog')"
             :token="token"
             @view-blog="handleViewBlog"
             @create-blog="handleCreateBlog"
             @edit-blog="handleEditBlog"
           />
 
+          <SchoolView
+            v-else-if="activeMenu === 'school' && isEnabled('school')"
+            :token="token"
+          />
+
+          <QuestionBankView
+            v-else-if="activeMenu === 'questions' && isEnabled('questions')"
+            :token="token"
+            @navigate-to-upload="activeMenu = 'upload'"
+          />
+
+          <UploadQuestions
+            v-else-if="activeMenu === 'upload' && isEnabled('upload')"
+            :token="token"
+          />
+
+          <PracticeView
+            v-else-if="activeMenu === 'practice' && isEnabled('practice')"
+            :token="token"
+          />
+
+          <MistakeNotebook
+            v-else-if="activeMenu === 'mistakes' && isEnabled('mistakes')"
+            :token="token"
+          />
+
+          <FeedbackView
+            v-else-if="activeMenu === 'feedback' && isEnabled('feedback')"
+            :token="token"
+          />
+
+          <!-- New Learning Plugins -->
+          <BooksView
+            v-else-if="activeMenu === 'books' && isEnabled('books')"
+            :token="token"
+          />
+
+          <KnowledgeView
+            v-else-if="activeMenu === 'knowledge' && isEnabled('knowledge')"
+            :token="token"
+          />
+
+          <ReportsView
+            v-else-if="activeMenu === 'reports' && isEnabled('reports')"
+            :token="token"
+          />
+
+          <RAGChatView
+            v-else-if="activeMenu === 'rag' && isEnabled('rag')"
+            :token="token"
+          />
+
+          <!-- Blog Sub-states -->
           <BlogDetail
             v-else-if="activeMenu === 'blog' && selectedBlogId && !editingBlogId && !isCreatingBlog"
             :token="token"
@@ -332,19 +372,19 @@ const menuItems = [
             @back="handleBlogBack"
             @saved="handleBlogSaved"
           />
-
-          <FeedbackView
-            v-else-if="activeMenu === 'feedback'"
-            :token="token"
-          />
-
-          <SchoolView
-            v-else-if="activeMenu === 'school'"
-            :token="token"
-          />
         </div>
       </main>
     </div>
+
+    <!-- Plugin Settings Dialog -->
+    <el-dialog
+      v-model="showPluginSettings"
+      :title="t('plugin.settingsTitle')"
+      width="900px"
+      :close-on-click-modal="false"
+    >
+      <PluginSettings @close="showPluginSettings = false" />
+    </el-dialog>
   </div>
 </template>
 

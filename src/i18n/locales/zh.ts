@@ -17,6 +17,13 @@ export default {
     practice: '练习模式',
     mistakes: '错题本',
     feedback: '意见反馈',
+    blog: '博客',
+    school: '学校信息',
+    books: '电子书',
+    knowledge: '知识点',
+    reports: '学习报告',
+    rag: 'AI 问答',
+    pluginSettings: '功能设置',
   },
 
   // Auth
@@ -528,6 +535,70 @@ export default {
       errorDetails: '错误详情',
       refreshList: '刷新学校列表',
       retry: '重试',
+    },
+  },
+
+  // Books
+  books: {
+    description: '管理和阅读电子书',
+    upload: '上传电子书',
+    uploadTitle: '上传电子书',
+    selectFile: '选择文件',
+    supportedFormats: '支持格式：PDF、TXT、MD、HTML（最大 50MB）',
+    parse: '解析',
+    empty: '暂无电子书',
+  },
+
+  // Knowledge
+  knowledge: {
+    moduleDescription: '浏览和管理知识树',
+    create: '创建知识点',
+    edit: '编辑知识点',
+    selectNode: '选择知识点查看详情',
+    name: '名称',
+    description: '描述',
+    level: '级别',
+    questionCount: '题目数',
+  },
+
+  // Reports
+  reports: {
+    description: '查看学习分析报告',
+    generateWeakPoints: '生成薄弱点报告',
+    generateRecommendations: '生成学习建议',
+    empty: '暂无报告',
+    generateHint: '点击上方按钮生成报告',
+  },
+
+  // RAG
+  rag: {
+    description: '向 AI 提问学习相关问题',
+    empty: '开始提问吧',
+    placeholder: '输入您的问题...（Enter 发送，Shift+Enter 换行）',
+    send: '发送',
+    sources: '参考来源',
+    relevance: '相关度',
+  },
+
+  // Plugin
+  plugin: {
+    settingsTitle: '功能设置',
+    settingsDescription: '根据需要启用或禁用功能',
+    corePlugin: '核心功能，不可禁用',
+    resetDefaults: '恢复默认',
+    description: {
+      profile: '用户资料管理',
+      feedback: '提交反馈和建议',
+      school: '学校招生信息',
+      questions: '题库管理',
+      practice: '练习模式',
+      mistakes: '错题本',
+      books: '电子书上传和阅读',
+      knowledge: '知识点树',
+      reports: '学习分析报告',
+      upload: '上传题目',
+      blog: '博客系统',
+      rag: 'AI 智能问答',
     },
   },
 };

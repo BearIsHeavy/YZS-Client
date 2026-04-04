@@ -46,6 +46,26 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/api/books': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/api/knowledge': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/api/reports': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/api/rag': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/health': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
     },
   },
 })

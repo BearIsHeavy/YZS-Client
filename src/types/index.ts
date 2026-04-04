@@ -591,3 +591,178 @@ export interface CreateFetchTaskResponse {
   status: FetchTaskStatusEnum;
   message: string;
 }
+
+// ==========================================
+// BOOKS TYPES (from /api/books)
+// ==========================================
+
+export interface BookResponse {
+  book_id: number;
+  title: string;
+  author?: string | null;
+  file_name: string;
+  file_path: string;
+  status: 'pending' | 'parsing' | 'ready' | 'failed';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookListResponse {
+  items: BookResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface BookUploadResponse {
+  book_id: number;
+  message: string;
+}
+
+export interface BookContentResponse {
+  book_id: number;
+  content: string;
+  content_type: string;
+}
+
+// ==========================================
+// KNOWLEDGE TYPES (from /api/knowledge)
+// ==========================================
+
+export interface KnowledgeResponse {
+  knowledge_id: number;
+  name: string;
+  description?: string | null;
+  parent_id?: number | null;
+  level?: number;
+  question_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KnowledgeTreeNode extends KnowledgeResponse {
+  children?: KnowledgeTreeNode[];
+}
+
+export interface KnowledgeTreeResponse {
+  tree: KnowledgeTreeNode[];
+  total: number;
+}
+
+export interface KnowledgeListResponse {
+  items: KnowledgeResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface QuestionKnowledgeResponse {
+  question_no: number;
+  knowledge_points: KnowledgeResponse[];
+}
+
+// ==========================================
+// REPORTS TYPES (from /api/reports)
+// ==========================================
+
+export type ReportTypeEnum = 'weak_points' | 'recommendations' | 'progress' | 'comprehensive';
+
+export interface ReportResponse {
+  report_id: number;
+  report_type: ReportTypeEnum;
+  title: string;
+  summary?: string | null;
+  data?: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReportListResponse {
+  items: ReportResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface ReportSummaryResponse {
+  total_reports: number;
+  by_type: Record<string, number>;
+  latest_report?: ReportResponse | null;
+}
+
+export interface WeakPointsResponse {
+  weak_points: Array<{
+    knowledge_id: number;
+    knowledge_name: string;
+    error_count: number;
+    error_rate: number;
+  }>;
+  total_questions: number;
+  total_errors: number;
+}
+
+export interface RecommendationsResponse {
+  recommendations: Array<{
+    type: string;
+    title: string;
+    description: string;
+    priority: 'high' | 'medium' | 'low';
+  }>;
+  generated_at: string;
+}
+
+// ==========================================
+// RAG TYPES (from /api/rag)
+// ==========================================
+
+export interface RAGSearchResult {
+  query: string;
+  results: Array<{
+    document_id: number;
+    content: string;
+    score: number;
+    metadata?: Record<string, unknown>;
+  }>;
+  total: number;
+}
+
+export interface RAGAnswerResponse {
+  query: string;
+  answer: string;
+  sources: Array<{
+    document_id: number;
+    content: string;
+    relevance: number;
+  }>;
+  confidence: number;
+}
+
+export interface RAGAnalyzeResponse {
+  text: string;
+  knowledge_points: string[];
+  topics: string[];
+  difficulty?: number;
+}
+
+export interface RAGQueryHistoryResponse {
+  queries: Array<{
+    query: string;
+    timestamp: string;
+    result_count: number;
+  }>;
+  total: number;
+}
+
+// ==========================================
+// HEALTH TYPES (from /health)
+// ==========================================
+
+export interface HealthResponse {
+  status: string;
+  version?: string;
+  database?: string;
+  redis?: string;
+}

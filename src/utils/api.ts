@@ -1498,3 +1498,448 @@ export const schoolApi = {
     return response.json();
   }
 };
+
+// ==========================================
+// BOOKS API ENDPOINTS (/api/books)
+// ==========================================
+
+export const booksApi = {
+  /**
+   * List all books
+   * GET /api/books/books
+   */
+  list: async (token: string, params: { page?: number; page_size?: number } = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.page !== undefined) queryParams.append('page', params.page.toString());
+    if (params.page_size !== undefined) queryParams.append('page_size', params.page_size.toString());
+
+    const response = await fetch(`${API_BASE_URL}/api/books/books?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get book details
+   * GET /api/books/books/{book_id}
+   */
+  getById: async (token: string, bookId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/books/books/${bookId}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get book content
+   * GET /api/books/books/{book_id}/content
+   */
+  getContent: async (token: string, bookId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/books/books/${bookId}/content`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Upload a book
+   * POST /api/books/books/upload
+   */
+  upload: async (token: string, formData: FormData) => {
+    const response = await fetch(`${API_BASE_URL}/api/books/books/upload`, {
+      method: 'POST',
+      headers: getUploadHeaders(token),
+      body: formData
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Parse a book
+   * POST /api/books/books/{book_id}/parse
+   */
+  parse: async (token: string, bookId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/books/books/${bookId}/parse`, {
+      method: 'POST',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Delete a book
+   * DELETE /api/books/books/{book_id}
+   */
+  delete: async (token: string, bookId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/books/books/${bookId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return null;
+  }
+};
+
+// ==========================================
+// KNOWLEDGE API ENDPOINTS (/api/knowledge)
+// ==========================================
+
+export const knowledgeApi = {
+  /**
+   * List knowledge points
+   * GET /api/knowledge/knowledge
+   */
+  list: async (token: string, params: { page?: number; page_size?: number; category?: string } = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.page !== undefined) queryParams.append('page', params.page.toString());
+    if (params.page_size !== undefined) queryParams.append('page_size', params.page_size.toString());
+    if (params.category !== undefined) queryParams.append('category', params.category);
+
+    const response = await fetch(`${API_BASE_URL}/api/knowledge/knowledge?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get knowledge point details
+   * GET /api/knowledge/knowledge/{knowledge_id}
+   */
+  getById: async (token: string, knowledgeId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/knowledge/knowledge/${knowledgeId}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get knowledge tree
+   * GET /api/knowledge/knowledge/tree
+   */
+  getTree: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/knowledge/knowledge/tree`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Create knowledge point
+   * POST /api/knowledge/knowledge
+   */
+  create: async (token: string, data: { name: string; description?: string; parent_id?: number | null }) => {
+    const response = await fetch(`${API_BASE_URL}/api/knowledge/knowledge`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Update knowledge point
+   * PUT /api/knowledge/knowledge/{knowledge_id}
+   */
+  update: async (token: string, knowledgeId: number, data: { name?: string; description?: string; parent_id?: number | null }) => {
+    const response = await fetch(`${API_BASE_URL}/api/knowledge/knowledge/${knowledgeId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Delete knowledge point
+   * DELETE /api/knowledge/knowledge/{knowledge_id}
+   */
+  delete: async (token: string, knowledgeId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/knowledge/knowledge/${knowledgeId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return null;
+  },
+
+  /**
+   * Link question to knowledge
+   * POST /api/knowledge/knowledge/questions/link
+   */
+  linkQuestion: async (token: string, data: { question_no: number; knowledge_id: number }) => {
+    const response = await fetch(`${API_BASE_URL}/api/knowledge/knowledge/questions/link`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get question knowledge
+   * GET /api/knowledge/knowledge/questions/{question_no}/knowledge
+   */
+  getQuestionKnowledge: async (token: string, questionNo: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/knowledge/knowledge/questions/${questionNo}/knowledge`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  }
+};
+
+// ==========================================
+// REPORTS API ENDPOINTS (/api/reports)
+// ==========================================
+
+export const reportsApi = {
+  /**
+   * List reports
+   * GET /api/reports/reports
+   */
+  list: async (token: string, params: { page?: number; page_size?: number } = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.page !== undefined) queryParams.append('page', params.page.toString());
+    if (params.page_size !== undefined) queryParams.append('page_size', params.page_size.toString());
+
+    const response = await fetch(`${API_BASE_URL}/api/reports/reports?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get report details
+   * GET /api/reports/reports/{report_id}
+   */
+  getById: async (token: string, reportId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/reports/reports/${reportId}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get report data
+   * GET /api/reports/reports/{report_id}/data
+   */
+  getData: async (token: string, reportId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/reports/reports/${reportId}/data`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get report summary
+   * GET /api/reports/reports/summary
+   */
+  getSummary: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/reports/reports/summary`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get latest weak point report
+   * GET /api/reports/reports/latest/weak-points
+   */
+  getLatestWeakPoints: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/reports/reports/latest/weak-points`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get latest recommendations report
+   * GET /api/reports/reports/latest/recommendations
+   */
+  getLatestRecommendations: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/reports/reports/latest/recommendations`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Generate weak point report
+   * POST /api/reports/reports/generate/weak-points
+   */
+  generateWeakPoints: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/reports/reports/generate/weak-points`, {
+      method: 'POST',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Generate recommendations report
+   * POST /api/reports/reports/generate/recommendations
+   */
+  generateRecommendations: async (token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/reports/reports/generate/recommendations`, {
+      method: 'POST',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Delete report
+   * DELETE /api/reports/reports/{report_id}
+   */
+  delete: async (token: string, reportId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/reports/reports/${reportId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return null;
+  }
+};
+
+// ==========================================
+// RAG API ENDPOINTS (/api/rag)
+// ==========================================
+
+export const ragApi = {
+  /**
+   * Semantic search
+   * POST /api/rag/rag/search
+   */
+  search: async (token: string, query: string, top_k?: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/rag/rag/search`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ query, top_k: top_k || 5 })
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Answer question
+   * POST /api/rag/rag/answer
+   */
+  answer: async (token: string, query: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/rag/rag/answer`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ query })
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Analyze with RAG
+   * POST /api/rag/rag/analyze
+   */
+  analyze: async (token: string, text: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/rag/rag/analyze`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ text })
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Vectorize book
+   * POST /api/rag/rag/books/{book_id}/vectorize
+   */
+  vectorizeBook: async (token: string, bookId: number) => {
+    const response = await fetch(`${API_BASE_URL}/api/rag/rag/books/${bookId}/vectorize`, {
+      method: 'POST',
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Search documents
+   * GET /api/rag/rag/search/documents
+   */
+  searchDocuments: async (token: string, query: string, top_k?: number) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('query', query);
+    if (top_k !== undefined) queryParams.append('top_k', top_k.toString());
+
+    const response = await fetch(`${API_BASE_URL}/api/rag/rag/search/documents?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Search knowledge
+   * GET /api/rag/rag/search/knowledge
+   */
+  searchKnowledge: async (token: string, query: string, top_k?: number) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('query', query);
+    if (top_k !== undefined) queryParams.append('top_k', top_k.toString());
+
+    const response = await fetch(`${API_BASE_URL}/api/rag/rag/search/knowledge?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  },
+
+  /**
+   * Get query history
+   * GET /api/rag/rag/query-history
+   */
+  getQueryHistory: async (token: string, limit?: number) => {
+    const queryParams = new URLSearchParams();
+    if (limit !== undefined) queryParams.append('limit', limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/api/rag/rag/query-history?${queryParams.toString()}`, {
+      headers: getAuthHeaders(token)
+    });
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  }
+};
+
+// ==========================================
+// HEALTH API ENDPOINTS (/health)
+// ==========================================
+
+export const healthApi = {
+  /**
+   * Health check
+   * GET /health
+   */
+  check: async () => {
+    const response = await fetch(`${API_BASE_URL}/health`);
+    if (!response.ok) await handleApiError(response);
+    return response.json();
+  }
+};

@@ -17,6 +17,13 @@ export default {
     practice: 'Practice',
     mistakes: 'Mistake Notebook',
     feedback: 'Feedback',
+    blog: 'Blog',
+    school: 'School Information',
+    books: 'E-Books',
+    knowledge: 'Knowledge Points',
+    reports: 'Study Reports',
+    rag: 'AI Q&A',
+    pluginSettings: 'Feature Settings',
   },
 
   // Auth
@@ -528,6 +535,69 @@ export default {
       errorDetails: 'Error Details',
       refreshList: 'Refresh School List',
       retry: 'Retry',
+    },
+  },
+
+  // Books
+  books: {
+    description: 'Manage and read your e-books',
+    upload: 'Upload Book',
+    uploadTitle: 'Upload E-Book',
+    selectFile: 'Select File',
+    supportedFormats: 'Supported formats: PDF, TXT, MD, HTML (up to 50MB)',
+    parse: 'Parse',
+    empty: 'No books yet',
+  },
+
+  // Knowledge
+  knowledge: {
+    description: 'Browse and manage your knowledge tree',
+    create: 'Create Knowledge Point',
+    edit: 'Edit Knowledge Point',
+    selectNode: 'Select a knowledge point to view details',
+    name: 'Name',
+    level: 'Level',
+    questionCount: 'Questions',
+  },
+
+  // Reports
+  reports: {
+    description: 'View your study analysis reports',
+    generateWeakPoints: 'Generate Weak Points Report',
+    generateRecommendations: 'Generate Recommendations',
+    empty: 'No reports yet',
+    generateHint: 'Click the buttons above to generate reports',
+  },
+
+  // RAG
+  rag: {
+    description: 'Ask AI questions about your study materials',
+    empty: 'Start asking questions',
+    placeholder: 'Enter your question... (Enter to send, Shift+Enter for new line)',
+    send: 'Send',
+    sources: 'Sources',
+    relevance: 'Relevance',
+  },
+
+  // Plugin
+  plugin: {
+    settingsTitle: 'Feature Settings',
+    settingsDescription: 'Enable or disable features as needed',
+    corePlugin: 'Core feature, cannot be disabled',
+    resetDefaults: 'Reset to Defaults',
+    description: {
+      profile: 'User profile management',
+      feedback: 'Submit feedback and suggestions',
+      school: 'School admission information',
+      questions: 'Question bank management',
+      practice: 'Practice mode',
+      mistakes: 'Mistake notebook',
+      books: 'E-book upload and reading',
+      knowledge: 'Knowledge point tree',
+      reports: 'Study analysis reports',
+      upload: 'Upload questions',
+      blog: 'Blog system',
+      rag: 'AI-powered Q&A',
     },
   },
 };
